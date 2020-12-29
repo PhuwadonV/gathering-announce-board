@@ -1,0 +1,31 @@
+// Create
+- Create VM instance f1 micro debian
+- Allow port 5000 https://console.cloud.google.com/networking/firewalls/list
+
+// Init
+sudo apt update
+sudo apt install git
+sudo apt install default-jdk
+sudo apt install ufw
+sudo ufw default deny incoming
+sudo ufw default allow outgoing
+sudo ufw allow ssh
+sudo ufw allow http
+sudo ufw allow https
+sudo ufw allow 3389/tcp
+sudo ufw allow 5000/tcp
+sudo ufw allow 5000/udp
+sudo ufw enable
+sudo ufw status numbered
+git clone https://github.com/PhuwadonV/gathering-announce-board.git
+cd gathering-announce-board
+javac Server.java
+java Server &
+
+// Command
+git reset --hard
+git pull
+sh clear.sh
+java <java-class> &
+ps -e -o pid= -o cmd= | grep java
+sudo kill <pid>
