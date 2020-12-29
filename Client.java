@@ -184,6 +184,11 @@ public class Client implements Closeable, Runnable {
                 case Protocal.Header.SIGNAL:
                     return -1;
                 case Protocal.Header.CONTACT:
+                    Protocal.write(ipBuff, 0, requestIp);
+                    System.out.println(
+                        "\r" +
+                        Protocal.readIp(ipBuff, 0) + ":" +
+                        requestPort                + " -> Contact ");
                     Protocal.write(
                         responseBuff,
                         responseOffset,
