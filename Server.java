@@ -43,7 +43,6 @@ public class Server implements Closeable, Runnable {
 
     private void process() throws IOException {
         int header = Protocal.readInt(requestBuff, 0);
-        Systen.out.println(header);
         if ((header & Protocal.SERVER_FREQUENT_HEADER) > 0) {
             switch(header) {
                 case Protocal.Header.MAINTAIN_ANNOUNCEMENT:
