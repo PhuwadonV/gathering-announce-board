@@ -39,11 +39,13 @@ public class Protocal {
         public static final int ACKNOWLEDGE            = 4;
         public static final int ASK                    = 5;
         public static final int ANSWER                 = 6;
-        public static final int SEND                   = 7;
-        public static final int POST_ANNOUNCEMENT      = 8;
-        public static final int REMOVE_ANNOUNCEMENT    = 9;
-        public static final int READ_ANNOUNCEMENT      = 10;
-        public static final int ANNOUNCEMENT_DETAIL    = 11;
+        public static final int IMPASSABLE             = 7;
+        public static final int DETOUR                 = 8;
+        public static final int SEND                   = 9;
+        public static final int POST_ANNOUNCEMENT      = 10;
+        public static final int REMOVE_ANNOUNCEMENT    = 11;
+        public static final int READ_ANNOUNCEMENT      = 12;
+        public static final int ANNOUNCEMENT_DETAIL    = 13;
     }
     //#endregion
     //#region Any -> Any
