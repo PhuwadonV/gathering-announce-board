@@ -1,2 +1,2 @@
 #!/bin/sh
-javac -d . src/"$1".java
+javac -cp src -d . src/"$1".java
