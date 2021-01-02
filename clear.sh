@@ -1,1 +1,2 @@
-rm *.class
+#!/bin/sh
+rm -f ./*.class

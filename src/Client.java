@@ -3,7 +3,6 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.Console;
 import java.io.FileInputStream;
-import java.net.UnknownHostException;
 import java.net.SocketAddress;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -36,8 +35,8 @@ public class Client implements Closeable, Runnable {
     private final String localIpString;
     private final int localPort;
     private final String localAddress;
+    private final byte[] ipBuff = new byte[4];
     private SocketAddress responseTo;
-    private byte[] ipBuff = new byte[4];
     private PassMode passMode = PassMode.DIRECT;
     private SocketAddress passThrough;
     private SocketAddress passTo;
@@ -48,39 +47,39 @@ public class Client implements Closeable, Runnable {
 
     public Client() throws IOException  {
         socket = new DatagramSocket();
-        requestBuff = new byte[Protocal.CLIENT_REQUEST_BUFFER_BYTES];
-        responseBuff = new byte[Protocal.CLIENT_RESPONSE_BUFFER_BYTES];
+        requestBuff = new byte[Protocol.CLIENT_REQBUFF_BYTES];
+        responseBuff = new byte[Protocol.CLIENT_RESBUFF_BYTES];
         request = new DatagramPacket(requestBuff, requestBuff.length);
         response = new DatagramPacket(responseBuff, responseBuff.length);
         localIpBytes = InetAddress.getLocalHost().getAddress();
-        localIp = Protocal.readInt(localIpBytes, 0);
-        localIpString = Protocal.readIp(localIpBytes, 0);
+        localIp = Protocol.readInt(localIpBytes, 0);
+        localIpString = Protocol.readIp(localIpBytes, 0);
         localPort = socket.getLocalPort();
         localAddress = localIpString + ":" + localPort;
     }
 
     public Client(int port) throws IOException  {
         socket = new DatagramSocket(port);
-        requestBuff = new byte[Protocal.CLIENT_REQUEST_BUFFER_BYTES];
-        responseBuff = new byte[Protocal.CLIENT_RESPONSE_BUFFER_BYTES];
+        requestBuff = new byte[Protocol.CLIENT_REQBUFF_BYTES];
+        responseBuff = new byte[Protocol.CLIENT_RESBUFF_BYTES];
         request = new DatagramPacket(requestBuff, requestBuff.length);
         response = new DatagramPacket(responseBuff, responseBuff.length);
         localIpBytes = InetAddress.getLocalHost().getAddress();
-        localIp = Protocal.readInt(localIpBytes, 0);
-        localIpString = Protocal.readIp(localIpBytes, 0);
+        localIp = Protocol.readInt(localIpBytes, 0);
+        localIpString = Protocol.readIp(localIpBytes, 0);
         localPort = socket.getLocalPort();
         localAddress = localIpString + ":" + localPort;
     }
 
     public Client(InetSocketAddress address) throws IOException  {
         socket = new DatagramSocket(address);
-        requestBuff = new byte[Protocal.CLIENT_REQUEST_BUFFER_BYTES];
-        responseBuff = new byte[Protocal.CLIENT_RESPONSE_BUFFER_BYTES];
+        requestBuff = new byte[Protocol.CLIENT_REQBUFF_BYTES];
+        responseBuff = new byte[Protocol.CLIENT_RESBUFF_BYTES];
         request = new DatagramPacket(requestBuff, requestBuff.length);
         response = new DatagramPacket(responseBuff, responseBuff.length);
         localIpBytes = InetAddress.getLocalHost().getAddress();
-        localIp = Protocal.readInt(localIpBytes, 0);
-        localIpString = Protocal.readIp(localIpBytes, 0);
+        localIp = Protocol.readInt(localIpBytes, 0);
+        localIpString = Protocol.readIp(localIpBytes, 0);
         localPort = socket.getLocalPort();
         localAddress = localIpString + ":" + localPort;
     }
@@ -95,7 +94,7 @@ public class Client implements Closeable, Runnable {
                 int length = process(
                     0,
                     0,
-                    Protocal.readInt(request.getAddress().getAddress(), 0),
+                    Protocol.readInt(request.getAddress().getAddress(), 0),
                     request.getPort());
 
                 if (length >= 0) {
@@ -115,13 +114,13 @@ public class Client implements Closeable, Runnable {
     }
 
     private int process(int requestOffset, int responseOffset, int requestIp, int requestPort) {
-        int header = Protocal.readInt(requestBuff, requestOffset);
-        if ((header & Protocal.CLIENT_FREQUENT_HEADER) > 0) {
+        int header = Protocol.readInt(requestBuff, requestOffset);
+        if ((header & Protocol.CLIENT_FREQUENT_HEADER) > 0) {
             switch(header) {
-                case Protocal.Header.ANNOUNCEMENT_STATUS:
+                case Protocol.Header.ANNOUNCEMENT_STATUS:
                     System.out.println("\rANNOUNCEMENT_STATUS ");
                     return -1;
-                case Protocal.Header.ANNOUNCEMENTS_OVERVIEW:
+                case Protocol.Header.ANNOUNCEMENTS_OVERVIEW:
                     System.out.println("\rANNOUNCEMENTS_OVERVIEW ");
                     return -1;
                 default:
@@ -130,17 +129,17 @@ public class Client implements Closeable, Runnable {
         }
         else {
             switch(header) {
-                case Protocal.Header.PROXY:
+                case Protocol.Header.PROXY:
                     {
                         int length = process(
-                            requestOffset + Protocal.Proxy.CONTENT_OFFSET,
-                            responseOffset + Protocal.Proxy.BYTES,
-                            Protocal.readInt(
+                            requestOffset + Protocol.Proxy.CONTENT_OFFSET,
+                            responseOffset + Protocol.Proxy.BYTES,
+                            Protocol.readInt(
                                 requestBuff,
-                                requestOffset + Protocal.Proxy.EIP_OFFSET),
-                            Protocal.readInt(
+                                requestOffset + Protocol.Proxy.EIP_OFFSET),
+                            Protocol.readInt(
                                 requestBuff,
-                                requestOffset + Protocal.Proxy.EPORT_OFFSET));
+                                requestOffset + Protocol.Proxy.EPORT_OFFSET));
 
                         if (length >= 0) {
                             System.arraycopy(
@@ -148,99 +147,99 @@ public class Client implements Closeable, Runnable {
                                 requestOffset,
                                 responseBuff,
                                 responseOffset,
-                                Protocal.Proxy.BYTES);
-                            return length + Protocal.Proxy.BYTES;
+                                Protocol.Proxy.BYTES);
+                            return length + Protocol.Proxy.BYTES;
                         }
                         else {
                             return length;
                         }
                     }
-                case Protocal.Header.FORWARD:
+                case Protocol.Header.FORWARD:
                     {
                         int length = process(
-                            requestOffset + Protocal.Forward.CONTENT_OFFSET,
+                            requestOffset + Protocol.Forward.CONTENT_OFFSET,
                             responseOffset,
-                            Protocal.readInt(
+                            Protocol.readInt(
                                 requestBuff,
-                                requestOffset + Protocal.Forward.EIP_OFFSET),
-                            Protocal.readInt(
+                                requestOffset + Protocol.Forward.EIP_OFFSET),
+                            Protocol.readInt(
                                 requestBuff,
-                                requestOffset + Protocal.Forward.EPORT_OFFSET));
+                                requestOffset + Protocol.Forward.EPORT_OFFSET));
 
                         if (length >= 0) {
                             responseTo = new InetSocketAddress(
-                                Protocal.readIp(
+                                Protocol.readIp(
                                     requestBuff,
-                                    requestOffset + Protocal.Forward.EIP_OFFSET),
-                                Protocal.readInt(
+                                    requestOffset + Protocol.Forward.EIP_OFFSET),
+                                Protocol.readInt(
                                     requestBuff,
-                                    requestOffset + Protocal.Forward.EPORT_OFFSET));
-                            return length + Protocal.Forward.BYTES;
+                                    requestOffset + Protocol.Forward.EPORT_OFFSET));
+                            return length + Protocol.Forward.BYTES;
                         }
                         else {
                             return length;
                         }
                     }
-                case Protocal.Header.SIGNAL:
+                case Protocol.Header.SIGNAL:
                     return -1;
-                case Protocal.Header.CONTACT:
-                    Protocal.write(ipBuff, 0, requestIp);
+                case Protocol.Header.CONTACT:
+                    Protocol.write(ipBuff, 0, requestIp);
                     System.out.println(
                         "\r" +
-                        Protocal.readIp(ipBuff, 0) + ":" +
+                        Protocol.readIp(ipBuff, 0) + ":" +
                         requestPort                + " -> Contact ");
-                    Protocal.write(
+                    Protocol.write(
                         responseBuff,
                         responseOffset,
-                        Protocal.Header.ACKNOWLEDGE);
-                    return Protocal.Acknowledge.BYTES;
-                case Protocal.Header.ACKNOWLEDGE:
-                    Protocal.write(ipBuff, 0, requestIp);
+                        Protocol.Header.ACKNOWLEDGE);
+                    return Protocol.Acknowledge.BYTES;
+                case Protocol.Header.ACKNOWLEDGE:
+                    Protocol.write(ipBuff, 0, requestIp);
                     System.out.println(
                         "\r" +
-                        Protocal.readIp(ipBuff, 0) + ":" +
+                        Protocol.readIp(ipBuff, 0) + ":" +
                         requestPort                + " -> Acknowledge ");
                     return -1;
-                case Protocal.Header.ASK:
-                    Protocal.write(
+                case Protocol.Header.ASK:
+                    Protocol.write(
                         responseBuff,
                         responseOffset,
-                        Protocal.Header.ANSWER);
-                    Protocal.write(
+                        Protocol.Header.ANSWER);
+                    Protocol.write(
                         responseBuff,
-                        responseOffset + Protocal.Answer.EIP_OFFSET,
+                        responseOffset + Protocol.Answer.EIP_OFFSET,
                         requestIp);
-                    Protocal.write(
+                    Protocol.write(
                         responseBuff,
-                        responseOffset + Protocal.Answer.EPORT_OFFSET,
+                        responseOffset + Protocol.Answer.EPORT_OFFSET,
                         requestPort);
-                    return Protocal.Ask.BYTES;
-                case Protocal.Header.ANSWER:
-                    Protocal.write(ipBuff, 0, requestIp);
+                    return Protocol.Ask.BYTES;
+                case Protocol.Header.ANSWER:
+                    Protocol.write(ipBuff, 0, requestIp);
                     System.out.println(
                         "\r" +
-                        Protocal.readIp(ipBuff, 0)                        + ":" +
+                        Protocol.readIp(ipBuff, 0)                        + ":" +
                         requestPort                                       + " -> Answer " +
-                        Protocal.readIp(
+                        Protocol.readIp(
                             requestBuff,
-                            requestOffset + Protocal.Answer.EIP_OFFSET)   + ":" +
-                        Protocal.readInt(
+                            requestOffset + Protocol.Answer.EIP_OFFSET)   + ":" +
+                        Protocol.readInt(
                             requestBuff,
-                            requestOffset + Protocal.Answer.EPORT_OFFSET) + " "
+                            requestOffset + Protocol.Answer.EPORT_OFFSET) + " "
                         );
                     return -1;
-                case Protocal.Header.SEND:
-                    Protocal.write(ipBuff, 0, requestIp);
+                case Protocol.Header.SEND:
+                    Protocol.write(ipBuff, 0, requestIp);
                     System.out.println(
                         "\r" +
-                        Protocal.readIp(ipBuff, 0)                        + ":" +
+                        Protocol.readIp(ipBuff, 0)                        + ":" +
                         requestPort                                       + " -> Send: " +
-                        Protocal.readString(
+                        Protocol.readString(
                             requestBuff,
-                            requestOffset + Protocal.Send.MESSAGE_OFFSET) + " "
+                            requestOffset + Protocol.Send.MESSAGE_OFFSET) + " "
                         );
                     return -1;
-                case Protocal.Header.ANNOUNCEMENT_DETAIL:
+                case Protocol.Header.ANNOUNCEMENT_DETAIL:
                     System.out.println("\rANNOUNCEMENT_DETAIL ");
                     return -1;
                 default:
@@ -307,27 +306,27 @@ public class Client implements Closeable, Runnable {
     }
 
     public synchronized void signal(InetSocketAddress address) throws IOException {
-        passBegin(address, Protocal.Signal.BYTES);
-        Protocal.write(responseBuff, passOffset, Protocal.Header.SIGNAL);
+        passBegin(address, Protocol.Signal.BYTES);
+        Protocol.write(responseBuff, passOffset, Protocol.Header.SIGNAL);
         passEnd();
     }
 
     public synchronized void contact(InetSocketAddress address) throws IOException {
-        passBegin(address, Protocal.Contact.BYTES);
-        Protocal.write(responseBuff, passOffset, Protocal.Header.CONTACT);
+        passBegin(address, Protocol.Contact.BYTES);
+        Protocol.write(responseBuff, passOffset, Protocol.Header.CONTACT);
         passEnd();
     }
 
     public synchronized void ask(InetSocketAddress address) throws IOException {
-        passBegin(address, Protocal.Ask.BYTES);
-        Protocal.write(responseBuff, passOffset, Protocal.Header.ASK);
+        passBegin(address, Protocol.Ask.BYTES);
+        Protocol.write(responseBuff, passOffset, Protocol.Header.ASK);
         passEnd();
     }
 
     public synchronized void send(InetSocketAddress address, String message) throws IOException {
-        passBegin(address, Protocal.Send.BYTES);
-        Protocal.write(responseBuff, passOffset, Protocal.Header.SEND);
-        Protocal.write(responseBuff, passOffset + Protocal.Send.MESSAGE_OFFSET, message);
+        passBegin(address, Protocol.Send.BYTES);
+        Protocol.write(responseBuff, passOffset, Protocol.Header.SEND);
+        Protocol.write(responseBuff, passOffset + Protocol.Send.MESSAGE_OFFSET, message);
         passEnd();
     }
 
@@ -341,14 +340,14 @@ public class Client implements Closeable, Runnable {
     private void passBegin(InetSocketAddress address, int length) {
         passTo = address;
         passLength = length;
-        passIp = Protocal.readInt(address.getAddress().getAddress(), 0);
+        passIp = Protocol.readInt(address.getAddress().getAddress(), 0);
         passPort = address.getPort();
         passOffset =
             passMode == PassMode.DIRECT ||
             (passIp == serverIp && passPort == serverPort) ||
             isLocalIp(passIp) ?
                 0 :
-                Protocal.Proxy.CONTENT_OFFSET;
+                Protocol.Proxy.CONTENT_OFFSET;
     }
 
     private void passEnd() throws IOException {
@@ -357,19 +356,19 @@ public class Client implements Closeable, Runnable {
             response.setSocketAddress(passTo);
         }
         else {
-            Protocal.write(
+            Protocol.write(
                 responseBuff,
                 0,
-                passMode == PassMode.PROXY ? Protocal.Header.PROXY : Protocal.Header.FORWARD);
-            Protocal.write(
+                passMode == PassMode.PROXY ? Protocol.Header.PROXY : Protocol.Header.FORWARD);
+            Protocol.write(
                 responseBuff,
-                Protocal.Proxy.EIP_OFFSET,
+                Protocol.Proxy.EIP_OFFSET,
                 passIp);
-            Protocal.write(
+            Protocol.write(
                 responseBuff,
-                Protocal.Proxy.EPORT_OFFSET,
+                Protocol.Proxy.EPORT_OFFSET,
                 passPort);
-            response.setLength(Protocal.Proxy.BYTES + passLength);
+            response.setLength(Protocol.Proxy.BYTES + passLength);
             response.setSocketAddress(passThrough);
         }
 
@@ -395,7 +394,7 @@ public class Client implements Closeable, Runnable {
             properties.load(config);
             serverIpString = properties.getProperty("serverIp");
             serverIpBytes = InetAddress.getByName(serverIpString).getAddress();
-            serverIp = Protocal.readInt(serverIpBytes, 0);
+            serverIp = Protocol.readInt(serverIpBytes, 0);
             serverPort = Integer.parseInt(properties.getProperty("serverPort"));
             gameId = Integer.parseInt(properties.getProperty("gameId"));
         }

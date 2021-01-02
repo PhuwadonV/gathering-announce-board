@@ -22,8 +22,8 @@ public class Server implements Closeable, Runnable {
 
     public Server(InetSocketAddress address) throws IOException  {
         socket = new DatagramSocket(address);
-        requestBuff = new byte[Protocal.SERVER_REQUEST_BUFFER_BYTES];
-        responseBuff = new byte[Protocal.SERVER_RESPONSE_BUFFER_BYTES];
+        requestBuff = new byte[Protocol.SERVER_REQBUFF_BYTES];
+        responseBuff = new byte[Protocol.SERVER_RESBUFF_BYTES];
         request = new DatagramPacket(requestBuff, requestBuff.length);
         response = new DatagramPacket(responseBuff, responseBuff.length);
     }
@@ -42,74 +42,74 @@ public class Server implements Closeable, Runnable {
     }
 
     private void process() throws IOException {
-        int header = Protocal.readInt(requestBuff, 0);
-        if ((header & Protocal.SERVER_FREQUENT_HEADER) > 0) {
+        int header = Protocol.readInt(requestBuff, 0);
+        if ((header & Protocol.SERVER_FREQUENT_HEADER) > 0) {
             switch(header) {
-                case Protocal.Header.MAINTAIN_ANNOUNCEMENT:
+                case Protocol.Header.MAINTAIN_ANNOUNCEMENT:
                     System.out.println("\rMAINTAIN_ANNOUNCEMENT ");
                     break;
-                case Protocal.Header.LOOK_AT_BOARD:
+                case Protocol.Header.LOOK_AT_BOARD:
                     System.out.println("\rLOOK_AT_BOARD ");
                     break;
             }
         }
         else {
             switch(header) {
-                case Protocal.Header.PROXY:
-                case Protocal.Header.FORWARD:
+                case Protocol.Header.PROXY:
+                case Protocol.Header.FORWARD:
                     {
                         int length = request.getLength();
                         System.arraycopy(requestBuff, 0, responseBuff, 0, length);
                         System.arraycopy(
                             request.getAddress().getAddress(), 0,
-                            responseBuff, Protocal.Proxy.EIP_OFFSET,
-                            Protocal.IP_BYTES);
-                        Protocal.write(
+                            responseBuff, Protocol.Proxy.EIP_OFFSET,
+                            Protocol.IP_BYTES);
+                        Protocol.write(
                             responseBuff,
-                            Protocal.Proxy.EPORT_OFFSET,
+                            Protocol.Proxy.EPORT_OFFSET,
                             request.getPort());
                         response.setSocketAddress(new InetSocketAddress(
-                            Protocal.readIp(requestBuff, Protocal.Proxy.EIP_OFFSET),
-                            Protocal.readInt(requestBuff, Protocal.Proxy.EPORT_OFFSET)));
+                            Protocol.readIp(requestBuff, Protocol.Proxy.EIP_OFFSET),
+                            Protocol.readInt(requestBuff, Protocol.Proxy.EPORT_OFFSET)));
                         response.setLength(length);
                         socket.send(response);
                     }
                     break;
-                case Protocal.Header.SIGNAL:
+                case Protocol.Header.SIGNAL:
                     break;
-                case Protocal.Header.CONTACT:
-                    Protocal.write(
+                case Protocol.Header.CONTACT:
+                    Protocol.write(
                         responseBuff,
                         0,
-                        Protocal.Header.ACKNOWLEDGE);
+                        Protocol.Header.ACKNOWLEDGE);
                     response.setSocketAddress(request.getSocketAddress());
-                    response.setLength(Protocal.Acknowledge.BYTES);
+                    response.setLength(Protocol.Acknowledge.BYTES);
                     socket.send(response);
                     break;
-                case Protocal.Header.ASK:
-                    Protocal.write(
+                case Protocol.Header.ASK:
+                    Protocol.write(
                         responseBuff,
                         0,
-                        Protocal.Header.ANSWER);
-                    Protocal.write(
+                        Protocol.Header.ANSWER);
+                    Protocol.write(
                         responseBuff,
-                        Protocal.Answer.EIP_OFFSET,
-                        Protocal.readInt(request.getAddress().getAddress(), 0));
-                    Protocal.write(
+                        Protocol.Answer.EIP_OFFSET,
+                        Protocol.readInt(request.getAddress().getAddress(), 0));
+                    Protocol.write(
                         responseBuff,
-                        Protocal.Answer.EPORT_OFFSET,
+                        Protocol.Answer.EPORT_OFFSET,
                         request.getPort());
                     response.setSocketAddress(request.getSocketAddress());
-                    response.setLength(Protocal.Answer.BYTES);
+                    response.setLength(Protocol.Answer.BYTES);
                     socket.send(response);
                     break;
-                case Protocal.Header.POST_ANNOUNCEMENT:
+                case Protocol.Header.POST_ANNOUNCEMENT:
                     System.out.println("\rPOST_ANNOUNCEMENT ");
                     break;
-                case Protocal.Header.REMOVE_ANNOUNCEMENT:
+                case Protocol.Header.REMOVE_ANNOUNCEMENT:
                     System.out.println("\rREMOVE_ANNOUNCEMENT ");
                     break;
-                case Protocal.Header.READ_ANNOUNCEMENT:
+                case Protocol.Header.READ_ANNOUNCEMENT:
                     System.out.println("\rREAD_ANNOUNCEMENT ");
                     break;
             }
