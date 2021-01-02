@@ -1,2 +1,2 @@
 #!/bin/sh
-sudo rm -f ./*.class
+rm -f ./*.class
