@@ -40,7 +40,6 @@ public class Server implements Closeable, Runnable {
     public void run() {
         while(isRunning) {
             try {
-               socket.receive(request);
                process();
             }
             catch (IOException e) {
@@ -50,6 +49,7 @@ public class Server implements Closeable, Runnable {
     }
 
     private void process() throws IOException {
+        socket.receive(request);
         int header = Protocol.readInt(requestBuff);
         int requestLength;
         if ((header & Protocol.SERVER_FREQUENT_HEADER) > 0) {
