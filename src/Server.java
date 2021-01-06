@@ -1,16 +1,18 @@
 import java.io.Closeable;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.DatagramSocket;
 import java.net.DatagramPacket;
 
 public class Server implements Closeable, Runnable {
-    private volatile boolean isRunning = true;
     private final DatagramSocket socket;
     private final DatagramPacket request;
     private final DatagramPacket response;
     private final byte[] requestBuff;
     private final byte[] responseBuff;
+    private final byte[] ipBuff = new byte[4];
+    private volatile boolean isRunning = true;
 
     public Server() throws IOException  {
         this(5000);
@@ -29,6 +31,12 @@ public class Server implements Closeable, Runnable {
     }
 
     @Override
+    public void close() {
+        stop();
+        socket.close();
+    }
+
+    @Override
     public void run() {
         while(isRunning) {
             try {
@@ -42,9 +50,31 @@ public class Server implements Closeable, Runnable {
     }
 
     private void process() throws IOException {
-        int header = Protocol.readInt(requestBuff, 0);
+        int header = Protocol.readInt(requestBuff);
+        int requestLength;
         if ((header & Protocol.SERVER_FREQUENT_HEADER) > 0) {
             switch(header) {
+                case Protocol.Header.PASS:
+                    requestLength = request.getLength();
+                    System.arraycopy(requestBuff, 0, responseBuff, 0, requestLength);
+                    System.arraycopy(
+                            request.getAddress().getAddress(), 0,
+                            responseBuff, Protocol.Pass.EIP_OFFSET,
+                            Protocol.IP_BYTES);
+                    Protocol.write(
+                            responseBuff,
+                            Protocol.Pass.EPORT_OFFSET,
+                            request.getPort());
+                    System.arraycopy(
+                            requestBuff, Protocol.Pass.EIP_OFFSET,
+                            ipBuff, 0,
+                            4);
+                    response.setSocketAddress(new InetSocketAddress(
+                            InetAddress.getByAddress(ipBuff),
+                            Protocol.readInt(requestBuff, Protocol.Pass.EPORT_OFFSET)));
+                    response.setLength(requestLength);
+                    socket.send(response);
+                    break;
                 case Protocol.Header.MAINTAIN_ANNOUNCEMENT:
                     System.out.println("\rMAINTAIN_ANNOUNCEMENT ");
                     break;
@@ -55,32 +85,11 @@ public class Server implements Closeable, Runnable {
         }
         else {
             switch(header) {
-                case Protocol.Header.PROXY:
-                case Protocol.Header.FORWARD:
-                    {
-                        int length = request.getLength();
-                        System.arraycopy(requestBuff, 0, responseBuff, 0, length);
-                        System.arraycopy(
-                            request.getAddress().getAddress(), 0,
-                            responseBuff, Protocol.Proxy.EIP_OFFSET,
-                            Protocol.IP_BYTES);
-                        Protocol.write(
-                            responseBuff,
-                            Protocol.Proxy.EPORT_OFFSET,
-                            request.getPort());
-                        response.setSocketAddress(new InetSocketAddress(
-                            Protocol.readIp(requestBuff, Protocol.Proxy.EIP_OFFSET),
-                            Protocol.readInt(requestBuff, Protocol.Proxy.EPORT_OFFSET)));
-                        response.setLength(length);
-                        socket.send(response);
-                    }
-                    break;
                 case Protocol.Header.SIGNAL:
                     break;
                 case Protocol.Header.CONTACT:
                     Protocol.write(
                         responseBuff,
-                        0,
                         Protocol.Header.ACKNOWLEDGE);
                     response.setSocketAddress(request.getSocketAddress());
                     response.setLength(Protocol.Acknowledge.BYTES);
@@ -89,12 +98,11 @@ public class Server implements Closeable, Runnable {
                 case Protocol.Header.ASK:
                     Protocol.write(
                         responseBuff,
-                        0,
                         Protocol.Header.ANSWER);
                     Protocol.write(
                         responseBuff,
                         Protocol.Answer.EIP_OFFSET,
-                        Protocol.readInt(request.getAddress().getAddress(), 0));
+                        Protocol.readInt(request.getAddress().getAddress()));
                     Protocol.write(
                         responseBuff,
                         Protocol.Answer.EPORT_OFFSET,
@@ -122,12 +130,6 @@ public class Server implements Closeable, Runnable {
 
     public synchronized void stop() {
         isRunning = false;
-    }
-
-    @Override
-    public void close() {
-        stop();
-        socket.close();
     }
 
     private static Server createServer(String[] args) throws IOException {

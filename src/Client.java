@@ -16,15 +16,15 @@ public class Client implements Closeable, Runnable {
         FORWARD;
     }
 
-    private static Client client = null;
-    private static Thread clientThread = null;
+    private static Client client;
+    private static Thread clientThread;
+    private static InetAddress serverIp;
     private static byte[] serverIpBytes = new byte[4];
-    private static int serverIp = 0;
-    private static String serverIpString = "0.0.0.0";
-    private static int serverPort = 5000;
-    private static int gameId = -1;
+    private static int serverIpInt;
+    private static String serverIpString;
+    private static int serverPort;
+    private static int gameId;
 
-    private volatile boolean isRunning = true;
     private final DatagramSocket socket;
     private final DatagramPacket request;
     private final DatagramPacket response;
@@ -36,7 +36,9 @@ public class Client implements Closeable, Runnable {
     private final int localPort;
     private final String localAddress;
     private final byte[] ipBuff = new byte[4];
-    private SocketAddress responseTo;
+    private volatile boolean isRunning = true;
+    private int responseToIp;
+    private int responseToPort;
     private PassMode passMode = PassMode.DIRECT;
     private SocketAddress passThrough;
     private SocketAddress passTo;
@@ -52,8 +54,8 @@ public class Client implements Closeable, Runnable {
         request = new DatagramPacket(requestBuff, requestBuff.length);
         response = new DatagramPacket(responseBuff, responseBuff.length);
         localIpBytes = InetAddress.getLocalHost().getAddress();
-        localIp = Protocol.readInt(localIpBytes, 0);
-        localIpString = Protocol.readIp(localIpBytes, 0);
+        localIp = Protocol.readInt(localIpBytes);
+        localIpString = Protocol.readIp(localIpBytes);
         localPort = socket.getLocalPort();
         localAddress = localIpString + ":" + localPort;
     }
@@ -65,8 +67,8 @@ public class Client implements Closeable, Runnable {
         request = new DatagramPacket(requestBuff, requestBuff.length);
         response = new DatagramPacket(responseBuff, responseBuff.length);
         localIpBytes = InetAddress.getLocalHost().getAddress();
-        localIp = Protocol.readInt(localIpBytes, 0);
-        localIpString = Protocol.readIp(localIpBytes, 0);
+        localIp = Protocol.readInt(localIpBytes);
+        localIpString = Protocol.readIp(localIpBytes);
         localPort = socket.getLocalPort();
         localAddress = localIpString + ":" + localPort;
     }
@@ -78,29 +80,38 @@ public class Client implements Closeable, Runnable {
         request = new DatagramPacket(requestBuff, requestBuff.length);
         response = new DatagramPacket(responseBuff, responseBuff.length);
         localIpBytes = InetAddress.getLocalHost().getAddress();
-        localIp = Protocol.readInt(localIpBytes, 0);
-        localIpString = Protocol.readIp(localIpBytes, 0);
+        localIp = Protocol.readInt(localIpBytes);
+        localIpString = Protocol.readIp(localIpBytes);
         localPort = socket.getLocalPort();
         localAddress = localIpString + ":" + localPort;
+    }
+
+    @Override
+    public void close() {
+        stop();
+        socket.close();
     }
 
     @Override
     public void run() {
         while(isRunning) {
             try {
-                responseTo = null;
+                responseToIp = 0;
                 socket.receive(request);
 
                 int length = process(
                     0,
                     0,
-                    Protocol.readInt(request.getAddress().getAddress(), 0),
+                    Protocol.readInt(request.getAddress().getAddress()),
                     request.getPort());
 
                 if (length >= 0) {
                     response.setLength(length);
 
-                    if (responseTo == null){
+                    if (responseToIp == 0){
+                        response.setSocketAddress(request.getSocketAddress());
+                    }
+                    else {
                         response.setSocketAddress(request.getSocketAddress());
                     }
 
@@ -180,25 +191,23 @@ public class Client implements Closeable, Runnable {
                             return length;
                         }
                     }
-                case Protocol.Header.SIGNAL:
-                    return -1;
                 case Protocol.Header.CONTACT:
-                    Protocol.write(ipBuff, 0, requestIp);
+                    Protocol.write(ipBuff, requestIp);
                     System.out.println(
                         "\r" +
-                        Protocol.readIp(ipBuff, 0) + ":" +
-                        requestPort                + " -> Contact ");
+                        Protocol.readIp(ipBuff) + ":" +
+                        requestPort             + " -> Contact ");
                     Protocol.write(
                         responseBuff,
                         responseOffset,
                         Protocol.Header.ACKNOWLEDGE);
                     return Protocol.Acknowledge.BYTES;
                 case Protocol.Header.ACKNOWLEDGE:
-                    Protocol.write(ipBuff, 0, requestIp);
+                    Protocol.write(ipBuff, requestIp);
                     System.out.println(
                         "\r" +
-                        Protocol.readIp(ipBuff, 0) + ":" +
-                        requestPort                + " -> Acknowledge ");
+                        Protocol.readIp(ipBuff) + ":" +
+                        requestPort             + " -> Acknowledge ");
                     return -1;
                 case Protocol.Header.ASK:
                     Protocol.write(
@@ -215,10 +224,10 @@ public class Client implements Closeable, Runnable {
                         requestPort);
                     return Protocol.Ask.BYTES;
                 case Protocol.Header.ANSWER:
-                    Protocol.write(ipBuff, 0, requestIp);
+                    Protocol.write(ipBuff, requestIp);
                     System.out.println(
                         "\r" +
-                        Protocol.readIp(ipBuff, 0)                        + ":" +
+                        Protocol.readIp(ipBuff)                           + ":" +
                         requestPort                                       + " -> Answer " +
                         Protocol.readIp(
                             requestBuff,
@@ -229,10 +238,10 @@ public class Client implements Closeable, Runnable {
                         );
                     return -1;
                 case Protocol.Header.SEND:
-                    Protocol.write(ipBuff, 0, requestIp);
+                    Protocol.write(ipBuff, requestIp);
                     System.out.println(
                         "\r" +
-                        Protocol.readIp(ipBuff, 0)                        + ":" +
+                        Protocol.readIp(ipBuff)                           + ":" +
                         requestPort                                       + " -> Send: " +
                         Protocol.readString(
                             requestBuff,
@@ -256,12 +265,6 @@ public class Client implements Closeable, Runnable {
         isRunning = false;
     }
 
-    @Override
-    public void close() {
-        stop();
-        socket.close();
-    }
-
     public byte[] getLocalIpBytes() {
         return localIpBytes;
     }
@@ -274,7 +277,7 @@ public class Client implements Closeable, Runnable {
         return localIpString;
     }
 
-    public int getLocalPort() {
+    public int  getLocalPort() {
         return localPort;
     }
 
@@ -340,11 +343,11 @@ public class Client implements Closeable, Runnable {
     private void passBegin(InetSocketAddress address, int length) {
         passTo = address;
         passLength = length;
-        passIp = Protocol.readInt(address.getAddress().getAddress(), 0);
+        passIp = Protocol.readInt(address.getAddress().getAddress());
         passPort = address.getPort();
         passOffset =
             passMode == PassMode.DIRECT ||
-            (passIp == serverIp && passPort == serverPort) ||
+            (passIp == serverIpInt && passPort == serverPort) ||
             isLocalIp(passIp) ?
                 0 :
                 Protocol.Proxy.CONTENT_OFFSET;
@@ -358,8 +361,7 @@ public class Client implements Closeable, Runnable {
         else {
             Protocol.write(
                 responseBuff,
-                0,
-                passMode == PassMode.PROXY ? Protocol.Header.PROXY : Protocol.Header.FORWARD);
+                Protocol.Header.PROXY);
             Protocol.write(
                 responseBuff,
                 Protocol.Proxy.EIP_OFFSET,
@@ -393,8 +395,9 @@ public class Client implements Closeable, Runnable {
             Properties properties = new Properties();
             properties.load(config);
             serverIpString = properties.getProperty("serverIp");
-            serverIpBytes = InetAddress.getByName(serverIpString).getAddress();
-            serverIp = Protocol.readInt(serverIpBytes, 0);
+            serverIp = InetAddress.getByName(serverIpString);
+            serverIpBytes = serverIp.getAddress();
+            serverIpInt = Protocol.readInt(serverIpBytes);
             serverPort = Integer.parseInt(properties.getProperty("serverPort"));
             gameId = Integer.parseInt(properties.getProperty("gameId"));
         }
@@ -464,9 +467,7 @@ public class Client implements Closeable, Runnable {
 
     private static InetSocketAddress getAddress(String token) {
         if(token.equals(".")) {
-            return new InetSocketAddress(
-                serverIpString,
-                serverPort);
+            return new InetSocketAddress(serverIp, serverPort);
         }
         else {
             int separatorIndex = token.indexOf(":");
@@ -546,11 +547,12 @@ public class Client implements Closeable, Runnable {
         System.out.println("\r4   # signal [.|<ip>:<port>] ");
         System.out.println("\r5   # contact [.|<ip>:<port>] ");
         System.out.println("\r6   # ask [.|<ip>:<port>] ");
-        System.out.println("\r7   # send [.|<ip>:<port>] <message> ");
-        System.out.println("\r8   # post <announcement-name> ");
-        System.out.println("\r9   # maintain ");
-        System.out.println("\r10  # remove ");
-        System.out.println("\r11  # look <current-board-version> <board-index> ");
-        System.out.println("\r12  # read <announcement-id> ");
+        System.out.println("\r7   # toll <port> [.|<ip>:<port>] ");
+        System.out.println("\r8   # send [.|<ip>:<port>] <message> ");
+        System.out.println("\r9   # post <announcement-name> ");
+        System.out.println("\r10  # maintain ");
+        System.out.println("\r11  # remove ");
+        System.out.println("\r12  # look <current-board-version> <board-index> ");
+        System.out.println("\r13  # read <announcement-id> ");
     }
 }
