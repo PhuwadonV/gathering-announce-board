@@ -1,9 +1,9 @@
 import java.io.Closeable;
 import java.io.IOException;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.DatagramSocket;
-import java.net.DatagramPacket;
 
 @SuppressWarnings({"unused"})
 public class Server implements Closeable, Runnable {
@@ -15,7 +15,7 @@ public class Server implements Closeable, Runnable {
     private final byte[] ipBuff = new byte[4];
     private volatile boolean isRunning = true;
 
-    public Server() throws IOException  {
+    public Server() throws IOException {
         this(5000);
     }
 
