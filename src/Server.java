@@ -5,6 +5,7 @@ import java.net.InetSocketAddress;
 import java.net.DatagramSocket;
 import java.net.DatagramPacket;
 
+@SuppressWarnings({"unused"})
 public class Server implements Closeable, Runnable {
     private final DatagramSocket socket;
     private final DatagramPacket request;

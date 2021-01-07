@@ -1,38 +1,40 @@
+import java.util.Comparator;
 import java.util.List;
 import java.util.LinkedList;
 
+@SuppressWarnings({"unused", "SpellCheckingInspection"})
 public class Protocol {
-    //#region
-    public static final int HEADER_BYTES            = Integer.BYTES;
-    public static final int IP_BYTES                = Integer.BYTES;
-    public static final int PORT_BYTES              = Integer.BYTES;
-    public static final int VERSION_BYTES           = Integer.BYTES;
-    public static final int ARRAY_LENGTH_BYTES      = Integer.BYTES;
-    public static final int STRING_LENGTH_BYTES     = Integer.BYTES;
-    public static final int GAME_ID_BYTES           = Integer.BYTES;
-    public static final int STATUS_BYTES            = Integer.BYTES;
-    public static final int BOARD_INDEX_BYTES       = Integer.BYTES;
-    public static final int ANNOUNCEMENT_ID_BYTES   = IP_BYTES + PORT_BYTES;
-    public static final int MAX_STRING_LENGTH       = 64;
-    public static final int MAX_STRING_BYTES        = STRING_LENGTH_BYTES + MAX_STRING_LENGTH * 2;
-    public static final int MAX_BUFFER_BYTES        = 65_535 - 8 - 20;
+    // <editor-fold desc="">
+    public static final int HEADER_BYTES           = Integer.BYTES;
+    public static final int IP_BYTES               = Integer.BYTES;
+    public static final int PORT_BYTES             = Integer.BYTES;
+    public static final int VERSION_BYTES          = Integer.BYTES;
+    public static final int ARRAY_LENGTH_BYTES     = Integer.BYTES;
+    public static final int STRING_LENGTH_BYTES    = Integer.BYTES;
+    public static final int GAME_ID_BYTES          = Integer.BYTES;
+    public static final int STATUS_BYTES           = Integer.BYTES;
+    public static final int BOARD_INDEX_BYTES      = Integer.BYTES;
+    public static final int ANNOUNCEMENT_ID_BYTES  = IP_BYTES + PORT_BYTES;
+    public static final int MAX_STRING_LENGTH      = 64;
+    public static final int MAX_STRING_BYTES       = STRING_LENGTH_BYTES + MAX_STRING_LENGTH * 2;
+    public static final int MAX_BUFFER_BYTES       = 65_535 - 8 - 20;
 
-    public static final int SERVER_REQBUFF_BYTES    = MAX_BUFFER_BYTES;
-    public static final int SERVER_RESBUFF_BYTES    = MAX_BUFFER_BYTES;
-    public static final int CLIENT_REQBUFF_BYTES    = AnnouncementsOverview.BYTES;
-    public static final int CLIENT_RESBUFF_BYTES    = PostAnnouncement.BYTES;
-    public static final int TOLLWAY_REQBUFF_BYTES   = MAX_BUFFER_BYTES;
-    public static final int TOLLWAY_RESBUFF_BYTES   = MAX_BUFFER_BYTES;
+    public static final int SERVER_REQBUFF_BYTES   = MAX_BUFFER_BYTES;
+    public static final int SERVER_RESBUFF_BYTES   = MAX_BUFFER_BYTES;
+    public static final int CLIENT_REQBUFF_BYTES   = AnnouncementsOverview.BYTES;
+    public static final int CLIENT_RESBUFF_BYTES   = PostAnnouncement.BYTES;
+    public static final int TOLLWAY_REQBUFF_BYTES  = MAX_BUFFER_BYTES;
+    public static final int TOLLWAY_RESBUFF_BYTES  = MAX_BUFFER_BYTES;
 
-    public static final int SERVER_FREQUENT_HEADER  = 1 << 31;
-    public static final int CLIENT_FREQUENT_HEADER  = 1 << 30;
+    public static final int SERVER_FREQUENT_HEADER = 1 << 31;
+    public static final int CLIENT_FREQUENT_HEADER = 1 << 30;
 
     public static class Header {
-        public static final int PASS                   = SERVER_FREQUENT_HEADER | 0;
+        public static final int PASS                   = SERVER_FREQUENT_HEADER;
         public static final int MAINTAIN_ANNOUNCEMENT  = SERVER_FREQUENT_HEADER | 1;
         public static final int LOOK_AT_BOARD          = SERVER_FREQUENT_HEADER | 2;
 
-        public static final int ANNOUNCEMENT_STATUS    = CLIENT_FREQUENT_HEADER | 0;
+        public static final int ANNOUNCEMENT_STATUS    = CLIENT_FREQUENT_HEADER;
         public static final int ANNOUNCEMENTS_OVERVIEW = CLIENT_FREQUENT_HEADER | 1;
 
         public static final int SIGNAL                 = 0;
@@ -48,8 +50,8 @@ public class Protocol {
         public static final int READ_ANNOUNCEMENT      = 10;
         public static final int ANNOUNCEMENT_DETAIL    = 11;
     }
-    //#endregion
-    //#region -> Any
+    // </editor-fold>
+    // <editor-fold desc="-> Any">
     public static class Signal {
         public static final int BYTES = HEADER_BYTES;
     }
@@ -80,8 +82,8 @@ public class Protocol {
         public static final int EIP_OFFSET        = TO_EPORT_OFFSET + PORT_BYTES;
         public static final int EPORT_OFFSET      = EIP_OFFSET + IP_BYTES;
     }
-    //#endregion
-    //#region -> Server
+    // </editor-fold>
+    // <editor-fold desc="-> Server">
     public static class Pass {
         public static final int BYTES          = HEADER_BYTES + IP_BYTES + PORT_BYTES;
         public static final int EIP_OFFSET     = HEADER_BYTES;
@@ -123,13 +125,13 @@ public class Protocol {
         public static final int GAME_ID_OFFSET         = HEADER_BYTES;
         public static final int ANNOUNCEMENT_ID_OFFSET = GAME_ID_OFFSET + GAME_ID_BYTES;
     }
-    //#endregion
-    //#region -> Client
+    // </editor-fold>
+    // <editor-fold desc="-> Client">
     public static class Send {
         public static final int BYTES          = HEADER_BYTES + MAX_STRING_BYTES;
         public static final int MESSAGE_OFFSET = HEADER_BYTES;
     }
-    
+
     public static class Answer {
         public static final int BYTES        = HEADER_BYTES + IP_BYTES + PORT_BYTES;
         public static final int EIP_OFFSET   = HEADER_BYTES;
@@ -159,8 +161,8 @@ public class Protocol {
         public static final int LIP_OFFSET   = EPORT_OFFSET + PORT_BYTES;
         public static final int LPORT_OFFSET = LIP_OFFSET + IP_BYTES;
     }
-    //#endregion
-    //#region Read/Write data
+    // </editor-fold>
+    // <editor-fold desc="Read/Write data">
     public static void write(byte[] dst, int offset, int value) {
         dst[offset    ] = (byte)((value      ) & 0xFF);
         dst[offset + 1] = (byte)((value >>  8) & 0xFF);
@@ -247,10 +249,10 @@ public class Protocol {
     public static String readString(byte[] data) {
         return readString(data, 0);
     }
-    //#endregion
-    //#region Test
+    // </editor-fold>
+    // <editor-fold desc="Test">
     public static void main(String[] args) {
-        List<Pair<Integer, String>> headers = new LinkedList<>(); 
+        List<Pair<Integer, String>> headers = new LinkedList<>();
         headers.add(new Pair<>(Signal.BYTES,                "SIGNAL                 :   Any  ->   Any "));
         headers.add(new Pair<>(Contact.BYTES,               "CONTACT                :   Any  ->   Any "));
         headers.add(new Pair<>(Acknowledge.BYTES,           "ACKNOWLEDGE            :   Any  ->   Any "));
@@ -268,10 +270,10 @@ public class Protocol {
         headers.add(new Pair<>(AnnouncementsOverview.BYTES, "ANNOUNCEMENTS_OVERVIEW :        -> Client"));
         headers.add(new Pair<>(AnnouncementDetail.BYTES,    "ANNOUNCEMENT_DETAIL    :        -> Client"));
         headers.stream()
-            .sorted((l, r) -> l.getItem1() - r.getItem1())
+            .sorted(Comparator.comparingInt(Pair::getItem1))
             .forEach(h -> System.out.println(h.getItem2() + " : " + h.getItem1()));
     }
-    //#endregion
+    // </editor-fold>
 }
 
 class Pair<Item1, Item2> {
