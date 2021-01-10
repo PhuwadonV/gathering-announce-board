@@ -230,10 +230,10 @@ public class Protocol {
 
     public static String readIp(byte[] data, int offset) {
         return
-            (data[offset + 3] & 0xFF) + "." +
-            (data[offset + 2] & 0xFF) + "." +
+            (data[offset    ] & 0xFF) + "." +
             (data[offset + 1] & 0xFF) + "." +
-            (data[offset    ] & 0xFF);
+            (data[offset + 2] & 0xFF) + "." +
+            (data[offset + 3] & 0xFF);
     }
 
     public static String readIp(byte[] data) {
