@@ -65,12 +65,11 @@ public class Protocol {
     }
 
     public static class Toll {
-        public static final int BYTES             = HEADER_BYTES + (IP_BYTES + PORT_BYTES) * 2 + PORT_BYTES;
+        public static final int BYTES             = HEADER_BYTES + (IP_BYTES + PORT_BYTES) * 2;
         public static final int FROM_EIP_OFFSET   = HEADER_BYTES;
         public static final int FROM_EPORT_OFFSET = FROM_EIP_OFFSET + IP_BYTES;
         public static final int TO_EIP_OFFSET     = FROM_EPORT_OFFSET + PORT_BYTES;
         public static final int TO_EPORT_OFFSET   = TO_EIP_OFFSET + IP_BYTES;
-        public static final int LPORT_OFFSET      = TO_EPORT_OFFSET + PORT_BYTES;
     }
 
     public static class Tollway {

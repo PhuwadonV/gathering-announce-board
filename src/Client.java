@@ -12,7 +12,7 @@ public class Client implements Closeable, Runnable {
     private static Client client;
     private static Thread clientThread;
     private static InetAddress serverIp;
-    private static byte[] serverIpBytes = new byte[4];
+    private static byte[] serverIpBytes = new byte[Protocol.IP_BYTES];
     private static int serverIpInt;
     private static String serverIpString;
     private static int serverPort;
@@ -28,7 +28,7 @@ public class Client implements Closeable, Runnable {
     private final String localIpString;
     private final int localPort;
     private final String localAddress;
-    private final byte[] ipBuff = new byte[4];
+    private final byte[] ipBuff = new byte[Protocol.IP_BYTES];
     private volatile boolean isRunning = true;
 
     public Client() throws IOException {
@@ -108,22 +108,27 @@ public class Client implements Closeable, Runnable {
                 case Protocol.Header.SIGNAL:
                     break;
                 case Protocol.Header.CONTACT:
-                    Protocol.write(ipBuff, requestIp);
+                    System.arraycopy(
+                        request.getAddress().getAddress(), 0,
+                        ipBuff, 0,
+                        Protocol.IP_BYTES);
                     System.out.println(
                         "\r" +
                         Protocol.readIp(ipBuff) + ":" +
-                        requestPort             + " -> Contact ");
+                        request.getPort()       + " -> Contact ");
                     Protocol.write(
                         responseBuff,
-                        responseOffset,
                         Protocol.Header.ACKNOWLEDGE);
                     break;
                 case Protocol.Header.ACKNOWLEDGE:
-                    Protocol.write(ipBuff, requestIp);
+                    System.arraycopy(
+                        request.getAddress().getAddress(), 0,
+                        ipBuff, 0,
+                        Protocol.IP_BYTES);
                     System.out.println(
                         "\r" +
                         Protocol.readIp(ipBuff) + ":" +
-                        requestPort             + " -> Acknowledge ");
+                        request.getPort()       + " -> Acknowledge ");
                     break;
                 case Protocol.Header.TOLL:
                     System.out.println("\rTOLL ");
@@ -132,42 +137,45 @@ public class Client implements Closeable, Runnable {
                     System.out.println("\rTOLLWAY ");
                     break;
                 case Protocol.Header.ASK:
+                    Protocol.write(responseBuff, Protocol.Header.ANSWER);
+                    System.arraycopy(
+                        request.getAddress().getAddress(), 0,
+                        responseBuff, Protocol.Answer.EIP_OFFSET,
+                        Protocol.IP_BYTES);
                     Protocol.write(
                         responseBuff,
-                        responseOffset,
-                        Protocol.Header.ANSWER);
-                    Protocol.write(
-                        responseBuff,
-                        responseOffset + Protocol.Answer.EIP_OFFSET,
-                        requestIp);
-                    Protocol.write(
-                        responseBuff,
-                        responseOffset + Protocol.Answer.EPORT_OFFSET,
-                        requestPort);
+                        Protocol.Answer.EPORT_OFFSET,
+                        request.getPort());
                     break;
                 case Protocol.Header.ANSWER:
-                    Protocol.write(ipBuff, requestIp);
+                    System.arraycopy(
+                        request.getAddress().getAddress(), 0,
+                        ipBuff, 0,
+                        Protocol.IP_BYTES);
                     System.out.println(
                         "\r" +
-                        Protocol.readIp(ipBuff)                           + ":" +
-                        requestPort                                       + " -> Answer " +
+                        Protocol.readIp(ipBuff)           + ":" +
+                        request.getPort()                 + " -> Answer " +
                         Protocol.readIp(
                             requestBuff,
-                            requestOffset + Protocol.Answer.EIP_OFFSET)   + ":" +
+                            Protocol.Answer.EIP_OFFSET)   + ":" +
                         Protocol.readInt(
                             requestBuff,
-                            requestOffset + Protocol.Answer.EPORT_OFFSET) + " "
+                            Protocol.Answer.EPORT_OFFSET) + " "
                         );
                     break;
                 case Protocol.Header.SEND:
-                    Protocol.write(ipBuff, requestIp);
+                    System.arraycopy(
+                        request.getAddress().getAddress(), 0,
+                        ipBuff, 0,
+                        Protocol.IP_BYTES);
                     System.out.println(
                         "\r" +
-                        Protocol.readIp(ipBuff)                           + ":" +
-                        requestPort                                       + " -> Send: " +
+                        Protocol.readIp(ipBuff)           + ":" +
+                        request.getPort()                 + " -> Send: " +
                         Protocol.readString(
                             requestBuff,
-                            requestOffset + Protocol.Send.MESSAGE_OFFSET) + " "
+                            Protocol.Send.MESSAGE_OFFSET) + " "
                         );
                     break;
                 case Protocol.Header.ANNOUNCEMENT_DETAIL:
@@ -199,7 +207,7 @@ public class Client implements Closeable, Runnable {
         return localIpString;
     }
 
-    public int  getLocalPort() {
+    public int getLocalPort() {
         return localPort;
     }
 
@@ -209,26 +217,31 @@ public class Client implements Closeable, Runnable {
 
     public synchronized void signal(InetSocketAddress address) throws IOException {
         Protocol.write(responseBuff, Protocol.Header.SIGNAL);
+        response.setLength(Protocol.Signal.BYTES);
+        response.setSocketAddress(address);
+        socket.send(response);
     }
 
     public synchronized void contact(InetSocketAddress address) throws IOException {
         Protocol.write(responseBuff, Protocol.Header.CONTACT);
+        response.setLength(Protocol.Contact.BYTES);
+        response.setSocketAddress(address);
+        socket.send(response);
     }
 
     public synchronized void ask(InetSocketAddress address) throws IOException {
         Protocol.write(responseBuff, Protocol.Header.ASK);
+        response.setLength(Protocol.Ask.BYTES);
+        response.setSocketAddress(address);
+        socket.send(response);
     }
 
     public synchronized void send(InetSocketAddress address, String message) throws IOException {
         Protocol.write(responseBuff, Protocol.Header.SEND);
         Protocol.write(responseBuff, Protocol.Send.MESSAGE_OFFSET, message);
-    }
-
-    private boolean isLocalIp(int ip) {
-        return
-            (ip & 0xFFFF0000) == 0xC0A80000 ||
-            (ip & 0xFFF00000) == 0xAC100000 ||
-            (ip & 0xFF000000) == 0x0A000000;
+        response.setLength(Protocol.Send.BYTES);
+        response.setSocketAddress(address);
+        socket.send(response);
     }
 
     private static Client createClient(String[] args) throws IOException {
@@ -245,7 +258,7 @@ public class Client implements Closeable, Runnable {
     public static void main(String[] args) throws IOException {
         Console console = System.console();
 
-        try (FileInputStream config = new FileInputStream("config.properties")) {
+        try (FileInputStream config = new FileInputStream("client.properties")) {
             Properties properties = new Properties();
             properties.load(config);
             serverIpString = properties.getProperty("serverIp");
@@ -319,7 +332,7 @@ public class Client implements Closeable, Runnable {
     }
 
     private static InetSocketAddress getAddress(String token) {
-        if(token.equals(".")) {
+        if(token.equals("server")) {
             return new InetSocketAddress(serverIp, serverPort);
         }
         else {
@@ -363,17 +376,18 @@ public class Client implements Closeable, Runnable {
     }
 
     private static void help() {
-        System.out.println("\r1  # exit ");
-        System.out.println("\r2  # show local-address ");
-        System.out.println("\r3  # signal [.|<ip>:<port>] ");
-        System.out.println("\r4  # contact [.|<ip>:<port>] ");
-        System.out.println("\r5  # ask [.|<ip>:<port>] ");
-        System.out.println("\r6  # toll [.|<ip>:<port>] <port> ");
-        System.out.println("\r7  # send [.|<ip>:<port>] <message> ");
-        System.out.println("\r8  # post <announcement-name> ");
-        System.out.println("\r9  # maintain ");
-        System.out.println("\r10 # remove ");
-        System.out.println("\r11 # look <current-board-version> <board-index> ");
-        System.out.println("\r12 # read <announcement-id> ");
+        System.out.println("\r1   # exit ");
+        System.out.println("\r2   # show local-address ");
+        System.out.println("\r3.1 # signal <ip>:<port> ");
+        System.out.println("\r3.2 # signal server ");
+        System.out.println("\r4   # contact <ip>:<port> ");
+        System.out.println("\r5   # ask server");
+        System.out.println("\r6   # toll <ip>:<port> ");
+        System.out.println("\r7   # send <ip>:<port> <message> ");
+        System.out.println("\r8   # post <announcement-name> ");
+        System.out.println("\r9   # maintain ");
+        System.out.println("\r10  # remove ");
+        System.out.println("\r11  # look <current-board-version> <board-index> ");
+        System.out.println("\r12  # read <announcement-id> ");
     }
 }
