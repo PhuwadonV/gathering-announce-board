@@ -1,11 +1,5 @@
-import java.io.Closeable;
-import java.io.Console;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
+import java.io.*;
+import java.net.*;
 import java.util.Properties;
 
 @SuppressWarnings({"unused", "StatementWithEmptyBody", "FieldCanBeLocal"})
@@ -13,10 +7,12 @@ public class Client implements Closeable, Runnable {
     private static Client client;
     private static Thread clientThread;
     private static InetAddress serverIp;
-    private static byte[] serverIpBytes = new byte[Protocol.IP_BYTES];
+    private static byte[] serverIpBytes;
     private static int serverIpInt;
     private static String serverIpString;
     private static int serverPort;
+    private static InetSocketAddress serverAddress;
+    private static String serverAddressString;
     private static int gameId;
 
     private final DatagramSocket socket;
@@ -24,51 +20,59 @@ public class Client implements Closeable, Runnable {
     private final DatagramPacket response;
     private final byte[] requestBuff;
     private final byte[] responseBuff;
+    private final InetAddress localIp;
     private final byte[] localIpBytes;
-    private final int localIp;
+    private final int localIpInt;
     private final String localIpString;
     private final int localPort;
-    private final String localAddress;
+    private final InetSocketAddress localAddress;
+    private final String localAddressString;
     private final byte[] ipBuff = new byte[Protocol.IP_BYTES];
     private volatile boolean isRunning = true;
 
-    public Client() throws IOException {
+    public Client() throws SocketException, UnknownHostException {
         socket = new DatagramSocket();
         requestBuff = new byte[Protocol.CLIENT_REQBUFF_BYTES];
         responseBuff = new byte[Protocol.CLIENT_RESBUFF_BYTES];
         request = new DatagramPacket(requestBuff, requestBuff.length);
         response = new DatagramPacket(responseBuff, responseBuff.length);
-        localIpBytes = InetAddress.getLocalHost().getAddress();
-        localIp = Protocol.readInt(localIpBytes);
+        localIp = InetAddress.getLocalHost();
+        localIpBytes = localIp.getAddress();
+        localIpInt = Protocol.readInt(localIpBytes);
         localIpString = Protocol.readIp(localIpBytes);
         localPort = socket.getLocalPort();
-        localAddress = localIpString + ":" + localPort;
+        localAddress = new InetSocketAddress(InetAddress.getByAddress(localIpBytes), localPort);
+        localAddressString = localIpString + ":" + localPort;
     }
 
-    public Client(int port) throws IOException  {
+    public Client(int port) throws SocketException, UnknownHostException {
         socket = new DatagramSocket(port);
         requestBuff = new byte[Protocol.CLIENT_REQBUFF_BYTES];
         responseBuff = new byte[Protocol.CLIENT_RESBUFF_BYTES];
         request = new DatagramPacket(requestBuff, requestBuff.length);
         response = new DatagramPacket(responseBuff, responseBuff.length);
-        localIpBytes = InetAddress.getLocalHost().getAddress();
-        localIp = Protocol.readInt(localIpBytes);
+        localIp = InetAddress.getLocalHost();
+        localIpBytes = localIp.getAddress();
+        localIpInt = Protocol.readInt(localIpBytes);
         localIpString = Protocol.readIp(localIpBytes);
         localPort = socket.getLocalPort();
-        localAddress = localIpString + ":" + localPort;
+        localAddress = new InetSocketAddress(InetAddress.getByAddress(localIpBytes), localPort);
+        localAddressString = localIpString + ":" + localPort;
     }
 
-    public Client(InetSocketAddress address) throws IOException  {
+    public Client(InetSocketAddress address) throws SocketException, UnknownHostException {
         socket = new DatagramSocket(address);
         requestBuff = new byte[Protocol.CLIENT_REQBUFF_BYTES];
         responseBuff = new byte[Protocol.CLIENT_RESBUFF_BYTES];
         request = new DatagramPacket(requestBuff, requestBuff.length);
         response = new DatagramPacket(responseBuff, responseBuff.length);
-        localIpBytes = InetAddress.getLocalHost().getAddress();
-        localIp = Protocol.readInt(localIpBytes);
+        localIp = InetAddress.getLocalHost();
+        localIpBytes = localIp.getAddress();
+        localIpInt = Protocol.readInt(localIpBytes);
         localIpString = Protocol.readIp(localIpBytes);
         localPort = socket.getLocalPort();
-        localAddress = localIpString + ":" + localPort;
+        localAddress = new InetSocketAddress(InetAddress.getByAddress(localIpBytes), localPort);
+        localAddressString = localIpString + ":" + localPort;
     }
 
     @Override
@@ -204,8 +208,12 @@ public class Client implements Closeable, Runnable {
         return localIpBytes;
     }
 
-    public int getLocalIp() {
+    public InetAddress getLocalIp() {
         return localIp;
+    }
+
+    public int getLocalIpInt() {
+        return localIpInt;
     }
 
     public String getLocalIpString() {
@@ -216,8 +224,12 @@ public class Client implements Closeable, Runnable {
         return localPort;
     }
 
-    public String getLocalAddress() {
+    public InetSocketAddress getLocalAddress() {
         return localAddress;
+    }
+
+    public String getLocalAddressString() {
+        return localAddressString;
     }
 
     public synchronized void signal(InetSocketAddress address) throws IOException {
@@ -249,7 +261,7 @@ public class Client implements Closeable, Runnable {
         socket.send(response);
     }
 
-    private static Client createClient(String[] args) throws IOException {
+    private static Client createClient(String[] args) throws SocketException, UnknownHostException {
         switch(args.length) {
             case 0:
                 return new Client();
@@ -263,7 +275,7 @@ public class Client implements Closeable, Runnable {
     public static void main(String[] args) throws IOException {
         Console console = System.console();
 
-        try (FileInputStream config = new FileInputStream("client.properties")) {
+        try (FileInputStream config = new FileInputStream("config.properties")) {
             Properties properties = new Properties();
             properties.load(config);
             serverIpString = properties.getProperty("serverIp");
@@ -271,6 +283,7 @@ public class Client implements Closeable, Runnable {
             serverIpBytes = serverIp.getAddress();
             serverIpInt = Protocol.readInt(serverIpBytes);
             serverPort = Integer.parseInt(properties.getProperty("serverPort"));
+            serverAddress = new InetSocketAddress(serverIp, serverPort);
             gameId = Integer.parseInt(properties.getProperty("gameId"));
         }
 
@@ -338,7 +351,7 @@ public class Client implements Closeable, Runnable {
 
     private static InetSocketAddress getAddress(String token) {
         if(token.equals("server")) {
-            return new InetSocketAddress(serverIp, serverPort);
+            return serverAddress;
         }
         else {
             int separatorIndex = token.indexOf(":");
@@ -355,7 +368,9 @@ public class Client implements Closeable, Runnable {
 
     private static void show(String[] tokens) {
         if (tokens[1].equals("local-address")) {
-            System.out.println("\rLocal address: " + client.getLocalAddress() + " ");
+            System.out.println(
+                "\rLocal address: "            +
+                client.getLocalAddressString() + " ");
         }
         else {
             System.out.println("\rUnknown command ");
