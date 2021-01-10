@@ -8,6 +8,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.Properties;
 
+@SuppressWarnings({"unused", "StatementWithEmptyBody", "FieldCanBeLocal"})
 public class Client implements Closeable, Runnable {
     private static Client client;
     private static Thread clientThread;
@@ -181,8 +182,6 @@ public class Client implements Closeable, Runnable {
                 case Protocol.Header.ANNOUNCEMENT_DETAIL:
                     System.out.println("\rANNOUNCEMENT_DETAIL ");
                     break;
-                default:
-                    break;
             }
         }
     }
@@ -304,16 +303,16 @@ public class Client implements Closeable, Runnable {
                 case "send":
                     send(tokens);
                     return true;
-                case "post":
-                    return true;
-                case "maintain":
-                    return true;
-                case "remove":
-                    return true;
-                case "look":
-                    return true;
-                case "read":
-                    return true;
+//                case "post":
+//                    return true;
+//                case "maintain":
+//                    return true;
+//                case "remove":
+//                    return true;
+//                case "look":
+//                    return true;
+//                case "read":
+//                    return true;
                 case "help":
                     help();
                     return true;
@@ -349,13 +348,11 @@ public class Client implements Closeable, Runnable {
     }
 
     private static void show(String[] tokens) {
-        switch(tokens[1]) {
-            case "local-address":
-                System.out.println("\rLocal address: " + client.getLocalAddress() + " ");
-                break;
-            default:
-                System.out.println("\rUnknown command ");
-                break;
+        if (tokens[1].equals("local-address")) {
+            System.out.println("\rLocal address: " + client.getLocalAddress() + " ");
+        }
+        else {
+            System.out.println("\rUnknown command ");
         }
     }
 
