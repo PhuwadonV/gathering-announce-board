@@ -97,13 +97,11 @@ public class Server implements Closeable, Runnable {
                     socket.send(response);
                     break;
                 case Protocol.Header.ASK:
-                    Protocol.write(
-                        responseBuff,
-                        Protocol.Header.ANSWER);
-                    Protocol.write(
-                        responseBuff,
-                        Protocol.Answer.EIP_OFFSET,
-                        Protocol.readInt(request.getAddress().getAddress()));
+                    Protocol.write(responseBuff, Protocol.Header.ANSWER);
+                    System.arraycopy(
+                        request.getAddress().getAddress(), 0,
+                        responseBuff, Protocol.Answer.EIP_OFFSET,
+                        Protocol.IP_BYTES);
                     Protocol.write(
                         responseBuff,
                         Protocol.Answer.EPORT_OFFSET,

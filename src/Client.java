@@ -120,6 +120,9 @@ public class Client implements Closeable, Runnable {
                     Protocol.write(
                         responseBuff,
                         Protocol.Header.ACKNOWLEDGE);
+                    response.setLength(Protocol.Acknowledge.BYTES);
+                    response.setSocketAddress(request.getSocketAddress());
+                    socket.send(response);
                     break;
                 case Protocol.Header.ACKNOWLEDGE:
                     System.arraycopy(
@@ -147,6 +150,9 @@ public class Client implements Closeable, Runnable {
                         responseBuff,
                         Protocol.Answer.EPORT_OFFSET,
                         request.getPort());
+                    response.setSocketAddress(request.getSocketAddress());
+                    response.setLength(Protocol.Answer.BYTES);
+                    socket.send(response);
                     break;
                 case Protocol.Header.ANSWER:
                     System.arraycopy(
@@ -377,7 +383,8 @@ public class Client implements Closeable, Runnable {
         System.out.println("\r2   # show local-address ");
         System.out.println("\r3.1 # signal <ip>:<port> ");
         System.out.println("\r3.2 # signal server ");
-        System.out.println("\r4   # contact <ip>:<port> ");
+        System.out.println("\r4.1 # contact <ip>:<port> ");
+        System.out.println("\r4.2 # contact server ");
         System.out.println("\r5   # ask server");
         System.out.println("\r6   # toll <ip>:<port> ");
         System.out.println("\r7   # send <ip>:<port> <message> ");
