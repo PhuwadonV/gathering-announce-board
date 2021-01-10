@@ -23,10 +23,6 @@ public class Tollway implements Closeable, Runnable {
     private final String localAddressString;
     private final int serverPort;
     private final int localPort;
-    private final int gate;
-    private final int destIp;
-    private final int destPort;
-    private final InetSocketAddress destination;
     private final DatagramSocket socket;
     private final DatagramPacket request;
     private final DatagramPacket response;
@@ -34,6 +30,10 @@ public class Tollway implements Closeable, Runnable {
     private final byte[] responseBuff;
     private final byte[] ipBuff = new byte[Protocol.IP_BYTES];
     private volatile boolean isRunning = true;
+    private int gate;
+    private int destIp;
+    private int destPort;
+    private InetSocketAddress destination;
 
     public Tollway(
             int serverIpInt, int serverPort,
