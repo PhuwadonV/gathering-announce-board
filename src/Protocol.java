@@ -40,8 +40,7 @@ public class Protocol {
         public static final int SIGNAL                 = 0;
         public static final int CONTACT                = 1;
         public static final int ACKNOWLEDGE            = 2;
-        public static final int TOLL                   = 3;
-        public static final int TOLLWAY                = 4;
+        public static final int REMOTE                 = 3;
         public static final int ASK                    = 5;
         public static final int ANSWER                 = 6;
         public static final int SEND                   = 7;
@@ -64,22 +63,19 @@ public class Protocol {
         public static final int BYTES = HEADER_BYTES;
     }
 
-    public static class Toll {
-        public static final int BYTES             = HEADER_BYTES + (IP_BYTES + PORT_BYTES) * 2;
+    public static class Remote {
+        public static final int BYTES             = HEADER_BYTES + (IP_BYTES + PORT_BYTES) * 2 + Integer.BYTES + (IP_BYTES + PORT_BYTES);
         public static final int FROM_EIP_OFFSET   = HEADER_BYTES;
         public static final int FROM_EPORT_OFFSET = FROM_EIP_OFFSET + IP_BYTES;
         public static final int TO_EIP_OFFSET     = FROM_EPORT_OFFSET + PORT_BYTES;
         public static final int TO_EPORT_OFFSET   = TO_EIP_OFFSET + IP_BYTES;
-    }
-
-    public static class Tollway {
-        public static final int BYTES             = HEADER_BYTES + (IP_BYTES + PORT_BYTES) * 3;
-        public static final int FROM_EIP_OFFSET   = HEADER_BYTES;
-        public static final int FROM_EPORT_OFFSET = FROM_EIP_OFFSET + IP_BYTES;
-        public static final int TO_EIP_OFFSET     = FROM_EPORT_OFFSET + PORT_BYTES;
-        public static final int TO_EPORT_OFFSET   = TO_EIP_OFFSET + IP_BYTES;
-        public static final int EIP_OFFSET        = TO_EPORT_OFFSET + PORT_BYTES;
+        public static final int CMD_OFFSET        = TO_EPORT_OFFSET + PORT_BYTES;
+        public static final int EIP_OFFSET        = CMD_OFFSET + Integer.BYTES;
         public static final int EPORT_OFFSET      = EIP_OFFSET + IP_BYTES;
+        public static final int ENTER_TOLLWAY     = 0;
+        public static final int DENY_TOLL         = 1;
+        public static final int ACCEPTED_TOLL     = 1;
+        public static final int LEAVE_TOLLWAY     = 2;
     }
     // </editor-fold>
     // <editor-fold desc="-> Server">
@@ -255,7 +251,7 @@ public class Protocol {
         headers.add(new Pair<>(Signal.BYTES,                "SIGNAL                 :   Any  ->   Any "));
         headers.add(new Pair<>(Contact.BYTES,               "CONTACT                :   Any  ->   Any "));
         headers.add(new Pair<>(Acknowledge.BYTES,           "ACKNOWLEDGE            :   Any  ->   Any "));
-        headers.add(new Pair<>(Toll.BYTES,                  "TOLL                   :   Any  ->   Any "));
+        headers.add(new Pair<>(Remote.BYTES,                  "TOLL                   :   Any  ->   Any "));
         headers.add(new Pair<>(Tollway.BYTES,               "TOLLWAY                :   Any  ->   Any "));
         headers.add(new Pair<>(Send.BYTES,                  "SEND                   : Client -> Client"));
         headers.add(new Pair<>(Ask.BYTES,                   "ASK                    : Client ->       "));

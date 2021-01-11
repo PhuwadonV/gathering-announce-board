@@ -8,6 +8,7 @@ public class Tollway implements Closeable, Runnable {
     private static Tollway tollway;
     private static Thread tollwayThread;
 
+    private final Consumer<Integer> onConnected;
     private final Consumer<Integer> onDestroy;
     private final InetAddress serverIp;
     private final InetAddress localIp;
@@ -39,8 +40,10 @@ public class Tollway implements Closeable, Runnable {
             int serverIpInt, int serverPort,
             int gate, int destIp, int destPort,
             Consumer<Integer> onCreate,
+            Consumer<Integer> onConnected,
             Consumer<Integer> onDestroy)
             throws UnknownHostException, SocketException {
+        this.onConnected = onConnected;
         this.onDestroy = onDestroy;
         this.serverIpInt = serverIpInt;
         Protocol.write(ipBuff, serverIpInt);
@@ -165,6 +168,7 @@ public class Tollway implements Closeable, Runnable {
                 Protocol.readInt(InetAddress.getByName(args[1]).getAddress()),
                 Integer.parseInt(args[2]),
                 (port) -> System.out.println("Create port: " + port),
+                (port) -> System.out.println("Connected: " + port),
                 (port) -> System.out.println("Destroy port: " + port));
         }
     }

@@ -138,8 +138,8 @@ public class Client implements Closeable, Runnable {
                         Protocol.readIp(ipBuff) + ":" +
                         request.getPort()       + " -> Acknowledge ");
                     break;
-                case Protocol.Header.TOLL:
-                    System.out.println("\rTOLL ");
+                case Protocol.Header.REMOTE:
+                    System.out.println("\rREMOTE ");
                     break;
                 case Protocol.Header.TOLLWAY:
                     System.out.println("\rTOLLWAY ");
