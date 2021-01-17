@@ -1,4 +1,3 @@
-import java.awt.*;
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.DatagramPacket;
@@ -51,13 +50,10 @@ public class Server implements Closeable, Runnable {
     private void process() throws IOException {
         socket.receive(request);
         int header = Protocol.readInt(requestBuff);
-        System.out.println(header);
         if ((header & Protocol.SERVER_FREQUENT_HEADER) > 0) {
-            System.out.println("BBB");
             switch(header) {
                 case Protocol.Header.MAINTAIN_ANNOUNCEMENT:
                     {
-                        System.out.println("CCC");
                         int randomStatus = (int)(Math.random() * 2);
                         Protocol.write(responseBuff, Protocol.Header.ANNOUNCEMENT_STATUS);
                         Protocol.write(
