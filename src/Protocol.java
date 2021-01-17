@@ -24,8 +24,8 @@ public class Protocol {
     public static final int CLIENT_REQBUFF_BYTES   = AnnouncementsOverview.BYTES;
     public static final int CLIENT_RESBUFF_BYTES   = PostAnnouncement.BYTES;
 
-    public static final int SERVER_FREQUENT_HEADER = 1 << 31;
-    public static final int CLIENT_FREQUENT_HEADER = 1 << 30;
+    public static final int SERVER_FREQUENT_HEADER = 1 << 30;
+    public static final int CLIENT_FREQUENT_HEADER = 1 << 29;
 
     public static class Header {
         public static final int MAINTAIN_ANNOUNCEMENT  = SERVER_FREQUENT_HEADER | 1;
