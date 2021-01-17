@@ -139,20 +139,6 @@ public class Client implements Closeable, Runnable {
                             Protocol.Answer.EPORT_OFFSET) + " "
                         );
                     break;
-                case Protocol.Header.SEND:
-                    System.arraycopy(
-                        request.getAddress().getAddress(), 0,
-                        ipBuff, 0,
-                        Protocol.IP_BYTES);
-                    System.out.println(
-                        "\r" +
-                        Protocol.readIp(ipBuff)           + ":" +
-                        request.getPort()                 + " -> Send: " +
-                        Protocol.readString(
-                            requestBuff,
-                            Protocol.Send.MESSAGE_OFFSET) + " "
-                        );
-                    break;
                 case Protocol.Header.ANNOUNCEMENT_DETAIL:
                     System.out.println("\rANNOUNCEMENT_DETAIL ");
                     break;
@@ -217,10 +203,15 @@ public class Client implements Closeable, Runnable {
         socket.send(response);
     }
 
-    public synchronized void send(InetSocketAddress address, String message) throws IOException {
-        Protocol.write(responseBuff, Protocol.Header.SEND);
-        Protocol.write(responseBuff, Protocol.Send.MESSAGE_OFFSET, message);
-        response.setLength(Protocol.Send.BYTES);
+    public synchronized void post(
+            InetSocketAddress address, int gameId,
+            int localIp, int localPort, String name) throws IOException {
+        Protocol.write(responseBuff, Protocol.Header.POST_ANNOUNCEMENT);
+        Protocol.write(responseBuff, Protocol.PostAnnouncement.GAME_ID_OFFSET, gameId);
+        Protocol.write(responseBuff, Protocol.PostAnnouncement.LIP_OFFSET, localIp);
+        Protocol.write(responseBuff, Protocol.PostAnnouncement.LPORT_OFFSET, localPort);
+        Protocol.write(responseBuff, Protocol.PostAnnouncement.NAME_OFFSET, name);
+        response.setLength(Protocol.PostAnnouncement.BYTES);
         response.setSocketAddress(address);
         socket.send(response);
     }
@@ -278,11 +269,9 @@ public class Client implements Closeable, Runnable {
                 case "ask":
                     ask(tokens);
                     return true;
-                case "send":
-                    send(tokens);
+                case "post":
+                    post(tokens);
                     return true;
-//                case "post":
-//                    return true;
 //                case "maintain":
 //                    return true;
 //                case "remove":
@@ -348,8 +337,11 @@ public class Client implements Closeable, Runnable {
         client.ask(getAddress(tokens[1]));
     }
 
-    private static void send(String[] tokens) throws IOException {
-        client.send(getAddress(tokens[1]), tokens[2]);
+    private static void post(String[] tokens) throws IOException {
+        client.post(
+            getAddress("server"), gameId,
+            client.getLocalIpInt(), client.getLocalPort(),
+            tokens[1]);
     }
 
     private static void help() {
@@ -360,11 +352,10 @@ public class Client implements Closeable, Runnable {
         System.out.println("\r4.1 # contact <ip>:<port> ");
         System.out.println("\r4.2 # contact server ");
         System.out.println("\r5   # ask server");
-        System.out.println("\r6   # send <ip>:<port> <message> ");
-        System.out.println("\r7   # post <announcement-name> ");
-        System.out.println("\r8   # maintain ");
-        System.out.println("\r9   # remove ");
-        System.out.println("\r10  # look <current-board-version> <board-index> ");
-        System.out.println("\r11  # read <announcement-id> ");
+        System.out.println("\r6   # post <announcement-name> ");
+        System.out.println("\r7   # maintain ");
+        System.out.println("\r8   # remove ");
+        System.out.println("\r9   # look <current-board-version> <board-index> ");
+        System.out.println("\r10  # read <announcement-id> ");
     }
 }

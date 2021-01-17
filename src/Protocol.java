@@ -39,11 +39,10 @@ public class Protocol {
         public static final int ACKNOWLEDGE            = 2;
         public static final int ASK                    = 3;
         public static final int ANSWER                 = 4;
-        public static final int SEND                   = 5;
-        public static final int POST_ANNOUNCEMENT      = 6;
-        public static final int REMOVE_ANNOUNCEMENT    = 7;
-        public static final int READ_ANNOUNCEMENT      = 8;
-        public static final int ANNOUNCEMENT_DETAIL    = 9;
+        public static final int POST_ANNOUNCEMENT      = 5;
+        public static final int REMOVE_ANNOUNCEMENT    = 6;
+        public static final int READ_ANNOUNCEMENT      = 7;
+        public static final int ANNOUNCEMENT_DETAIL    = 8;
     }
     // </editor-fold>
     // <editor-fold desc="Any -> Any">
@@ -57,29 +56,6 @@ public class Protocol {
 
     public static class Acknowledge {
         public static final int BYTES = HEADER_BYTES;
-    }
-    // </editor-fold>
-    // <editor-fold desc="Client -> Client">
-    public class Send {
-        public static final int BYTES          = HEADER_BYTES + MAX_STRING_BYTES;
-        public static final int MESSAGE_OFFSET = HEADER_BYTES;
-        private String message;
-
-        public Send() {
-            this("");
-        }
-
-        public Send(String message) {
-            this.message = message;
-        }
-
-        public String getMessage() {
-            return message;
-        }
-
-        public void setMessage(String message) {
-            this.message = message;
-        }
     }
     // </editor-fold>
     // <editor-fold desc="Client -> Server">
@@ -243,17 +219,16 @@ public class Protocol {
         headers.add(new Pair<>(Signal.BYTES,                "SIGNAL                 :   Any  ->   Any "));
         headers.add(new Pair<>(Contact.BYTES,               "CONTACT                :   Any  ->   Any "));
         headers.add(new Pair<>(Acknowledge.BYTES,           "ACKNOWLEDGE            :   Any  ->   Any "));
-        headers.add(new Pair<>(Send.BYTES,                  "SEND                   : Client -> Client"));
-        headers.add(new Pair<>(Ask.BYTES,                   "ASK                    : Client ->   Any "));
-        headers.add(new Pair<>(PostAnnouncement.BYTES,      "POST_ANNOUNCEMENT      : Client ->   Any "));
-        headers.add(new Pair<>(MaintainAnnouncement.BYTES,  "MAINTAIN_ANNOUNCEMENT  : Client ->   Any "));
-        headers.add(new Pair<>(RemoveAnnouncement.BYTES,    "REMOVE_ANNOUNCEMENT    : Client ->   Any "));
-        headers.add(new Pair<>(LookAtBoard.BYTES,           "LOOK_AT_BOARD          : Client ->   Any "));
-        headers.add(new Pair<>(ReadAnnouncement.BYTES,      "READ_ANNOUNCEMENT      : Client ->   Any "));
-        headers.add(new Pair<>(Answer.BYTES,                "ANSWER                 :   Any  -> Client"));
-        headers.add(new Pair<>(AnnouncementStatus.BYTES,    "ANNOUNCEMENT_STATUS    :   Any  -> Client"));
-        headers.add(new Pair<>(AnnouncementsOverview.BYTES, "ANNOUNCEMENTS_OVERVIEW :   Any  -> Client"));
-        headers.add(new Pair<>(AnnouncementDetail.BYTES,    "ANNOUNCEMENT_DETAIL    :   Any  -> Client"));
+        headers.add(new Pair<>(Ask.BYTES,                   "ASK                    : Client -> Server"));
+        headers.add(new Pair<>(PostAnnouncement.BYTES,      "POST_ANNOUNCEMENT      : Client -> Server"));
+        headers.add(new Pair<>(MaintainAnnouncement.BYTES,  "MAINTAIN_ANNOUNCEMENT  : Client -> Server"));
+        headers.add(new Pair<>(RemoveAnnouncement.BYTES,    "REMOVE_ANNOUNCEMENT    : Client -> Server"));
+        headers.add(new Pair<>(LookAtBoard.BYTES,           "LOOK_AT_BOARD          : Client -> Server"));
+        headers.add(new Pair<>(ReadAnnouncement.BYTES,      "READ_ANNOUNCEMENT      : Client -> Server"));
+        headers.add(new Pair<>(Answer.BYTES,                "ANSWER                 : Server -> Client"));
+        headers.add(new Pair<>(AnnouncementStatus.BYTES,    "ANNOUNCEMENT_STATUS    : Server -> Client"));
+        headers.add(new Pair<>(AnnouncementsOverview.BYTES, "ANNOUNCEMENTS_OVERVIEW : Server -> Client"));
+        headers.add(new Pair<>(AnnouncementDetail.BYTES,    "ANNOUNCEMENT_DETAIL    : Server -> Client"));
         headers.stream()
             .sorted(Comparator.comparingInt(Pair::getItem1))
             .forEach(h -> System.out.println(h.getItem2() + " : " + h.getItem1()));

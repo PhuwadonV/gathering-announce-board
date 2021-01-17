@@ -48,6 +48,7 @@ public class Server implements Closeable, Runnable {
     }
 
     private void process() throws IOException {
+        System.out.println("\AAA ");
         socket.receive(request);
         int header = Protocol.readInt(requestBuff);
         if ((header & Protocol.SERVER_FREQUENT_HEADER) > 0) {
