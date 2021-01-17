@@ -28,11 +28,11 @@ public class Protocol {
     public static final int CLIENT_FREQUENT_HEADER = 1 << 30;
 
     public static class Header {
-        public static final int MAINTAIN_ANNOUNCEMENT  = SERVER_FREQUENT_HEADER;
-        public static final int LOOK_AT_BOARD          = SERVER_FREQUENT_HEADER | 1;
+        public static final int MAINTAIN_ANNOUNCEMENT  = SERVER_FREQUENT_HEADER | 1;
+        public static final int LOOK_AT_BOARD          = SERVER_FREQUENT_HEADER | 2;
 
-        public static final int ANNOUNCEMENT_STATUS    = CLIENT_FREQUENT_HEADER;
-        public static final int ANNOUNCEMENTS_OVERVIEW = CLIENT_FREQUENT_HEADER | 1;
+        public static final int ANNOUNCEMENT_STATUS    = CLIENT_FREQUENT_HEADER | 1;
+        public static final int ANNOUNCEMENTS_OVERVIEW = CLIENT_FREQUENT_HEADER | 2;
 
         public static final int SIGNAL                 = 0;
         public static final int CONTACT                = 1;
