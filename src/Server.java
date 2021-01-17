@@ -53,7 +53,19 @@ public class Server implements Closeable, Runnable {
         if ((header & Protocol.SERVER_FREQUENT_HEADER) > 0) {
             switch(header) {
                 case Protocol.Header.MAINTAIN_ANNOUNCEMENT:
-                    System.out.println("\rMAINTAIN_ANNOUNCEMENT ");
+                    {
+                        int randomStatus = (int)(Math.random() * 2);
+                        Protocol.write(responseBuff, Protocol.Header.ANNOUNCEMENT_STATUS);
+                        Protocol.write(
+                            responseBuff,
+                            Protocol.AnnouncementStatus.STATUS_OFFSET,
+                            randomStatus > 0 ?
+                                Protocol.AnnouncementStatus.MAINTAINED :
+                                Protocol.AnnouncementStatus.NOT_EXISTS);
+                        response.setSocketAddress(request.getSocketAddress());
+                        response.setLength(Protocol.Answer.BYTES);
+                        socket.send(response);
+                    }
                     break;
                 case Protocol.Header.LOOK_AT_BOARD:
                     System.out.println("\rLOOK_AT_BOARD ");
@@ -87,10 +99,34 @@ public class Server implements Closeable, Runnable {
                     socket.send(response);
                     break;
                 case Protocol.Header.POST_ANNOUNCEMENT:
-                    System.out.println("\rPOST_ANNOUNCEMENT ");
+                    {
+                        int randomStatus = (int)(Math.random() * 2);
+                        Protocol.write(responseBuff, Protocol.Header.ANNOUNCEMENT_STATUS);
+                        Protocol.write(
+                            responseBuff,
+                            Protocol.AnnouncementStatus.STATUS_OFFSET,
+                            randomStatus > 0 ?
+                                Protocol.AnnouncementStatus.CREATED :
+                                Protocol.AnnouncementStatus.ALREADY_EXISTS);
+                        response.setSocketAddress(request.getSocketAddress());
+                        response.setLength(Protocol.Answer.BYTES);
+                        socket.send(response);
+                    }
                     break;
                 case Protocol.Header.REMOVE_ANNOUNCEMENT:
-                    System.out.println("\rREMOVE_ANNOUNCEMENT ");
+                    {
+                        int randomStatus = (int)(Math.random() * 2);
+                        Protocol.write(responseBuff, Protocol.Header.ANNOUNCEMENT_STATUS);
+                        Protocol.write(
+                            responseBuff,
+                            Protocol.AnnouncementStatus.STATUS_OFFSET,
+                            randomStatus > 0 ?
+                                Protocol.AnnouncementStatus.REMOVED :
+                                Protocol.AnnouncementStatus.NOT_EXISTS);
+                        response.setSocketAddress(request.getSocketAddress());
+                        response.setLength(Protocol.Answer.BYTES);
+                        socket.send(response);
+                    }
                     break;
                 case Protocol.Header.READ_ANNOUNCEMENT:
                     System.out.println("\rREAD_ANNOUNCEMENT ");
