@@ -1,3 +1,4 @@
+import java.awt.*;
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.DatagramPacket;
@@ -50,6 +51,7 @@ public class Server implements Closeable, Runnable {
     private void process() throws IOException {
         socket.receive(request);
         int header = Protocol.readInt(requestBuff);
+        System.out.println("AAA");
         if ((header & Protocol.SERVER_FREQUENT_HEADER) > 0) {
             switch(header) {
                 case Protocol.Header.MAINTAIN_ANNOUNCEMENT:
