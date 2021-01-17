@@ -102,8 +102,14 @@ public class Protocol {
     }
 
     public static class AnnouncementStatus {
-        public static final int BYTES         = HEADER_BYTES + STATUS_BYTES;
-        public static final int STATUS_OFFSET = HEADER_BYTES;
+        public static final int BYTES           = HEADER_BYTES + STATUS_BYTES;
+        public static final int STATUS_OFFSET   = HEADER_BYTES;
+        public static final int CREATED         = 0;
+        public static final int ALREADY_EXISTS  = 1;
+        public static final int MAINTAINED      = 2;
+        public static final int NOT_EXISTS      = 3;
+        public static final int REMOVED         = 4;
+        public static final int BOARD_NO_CHANGE = 5;
     }
 
     public static class AnnouncementsOverview {
@@ -125,7 +131,7 @@ public class Protocol {
         public static final int LPORT_OFFSET = LIP_OFFSET + IP_BYTES;
     }
     // </editor-fold>
-    // <editor-fold desc="Read/Write data">
+    // <editor-fold desc="Data Conversion">
     public static void write(byte[] dst, int offset, int value) {
         dst[offset    ] = (byte)((value      ) & 0xFF);
         dst[offset + 1] = (byte)((value >>  8) & 0xFF);
@@ -142,7 +148,7 @@ public class Protocol {
         dst[offset + 1] = (byte)((value >>  8) & 0xFFL);
         dst[offset + 2] = (byte)((value >> 16) & 0xFFL);
         dst[offset + 3] = (byte)((value >> 24) & 0xFFL);
-        dst[offset + 4] = (byte)((value >> 23) & 0xFFL);
+        dst[offset + 4] = (byte)((value >> 32) & 0xFFL);
         dst[offset + 5] = (byte)((value >> 40) & 0xFFL);
         dst[offset + 6] = (byte)((value >> 48) & 0xFFL);
         dst[offset + 7] = (byte)((value >> 56) & 0xFFL);
@@ -182,7 +188,7 @@ public class Protocol {
             (data[offset + 1] & 0xFFL) <<  8 |
             (data[offset + 2] & 0xFFL) << 16 |
             (data[offset + 3] & 0xFFL) << 24 |
-            (data[offset + 4] & 0xFFL) << 23 |
+            (data[offset + 4] & 0xFFL) << 32 |
             (data[offset + 5] & 0xFFL) << 40 |
             (data[offset + 6] & 0xFFL) << 48 |
             (data[offset + 7] & 0xFFL) << 56;
@@ -190,6 +196,33 @@ public class Protocol {
 
     public static long readLong(byte[] data) {
         return readLong(data, 0);
+    }
+
+    public static String readString(byte[] data, int offset) {
+        int length = readInt(data, offset);
+        return length == 0 ? "" : new String(data, offset + STRING_LENGTH_BYTES, readInt(data, offset));
+    }
+
+    public static String readString(byte[] data) {
+        return readString(data, 0);
+    }
+
+    public static String readHexString(byte[] data, int offset) {
+        StringBuilder hexString = new StringBuilder();
+        for(int i = data.length - 1; i >= 0; i--) {
+            int value = data[offset + i];
+            int high = (value & 0xF0) >> 4;
+            int low = value & 0x0F;
+            high = high > 9 ? high + 55 : high + 48;
+            low = low > 9 ? low + 55 : low + 48;
+            hexString.append((char)high);
+            hexString.append((char)low);
+        }
+        return hexString.toString();
+    }
+
+    public static String readHexString(byte[] data) {
+        return readHexString(data, 0);
     }
 
     public static String readIp(byte[] data, int offset) {
@@ -204,13 +237,34 @@ public class Protocol {
         return readIp(data, 0);
     }
 
-    public static String readString(byte[] data, int offset) {
-        int length = readInt(data, offset);
-        return length == 0 ? "" : new String(data, offset + STRING_LENGTH_BYTES, readInt(data, offset));
+    public static int hexStringToInt(String hexString) {
+        int value = 0;
+        for(int i = 0; i < Integer.BYTES; i++) {
+            int charIndex = i * 2;
+            int high = hexString.charAt(charIndex);
+            int low = hexString.charAt(charIndex + 1);
+            high = high > 64 ? high - 55 : high - 48;
+            low = low > 64 ? low - 55 : low - 48;
+            high <<= 28 - 8 * i;
+            low <<= 24 - 8 * i;
+            value |= high | low;
+        }
+        return value;
     }
 
-    public static String readString(byte[] data) {
-        return readString(data, 0);
+    public static long hexStringToLong(String hexString) {
+        long value = 0;
+        for(int i = 0; i < Long.BYTES; i++) {
+            int charIndex = i * 2;
+            long high = hexString.charAt(charIndex);
+            long low = hexString.charAt(charIndex + 1);
+            high = high > 64 ? high - 55 : high - 48;
+            low = low > 64 ? low - 55 : low - 48;
+            high <<= 60 - (8 * i);
+            low <<= 56 - (8 * i);
+            value |= high | low;
+        }
+        return value;
     }
     // </editor-fold>
     // <editor-fold desc="Sorted protocol size">

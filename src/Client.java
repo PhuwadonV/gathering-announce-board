@@ -17,6 +17,8 @@ public class Client implements Closeable, Runnable {
     private final Address localAddress;
     private final byte[] ipBuff = new byte[Protocol.IP_BYTES];
     private volatile boolean isRunning = true;
+    private int boardVersion = 0;
+    private String lastAnnouncementsOverview = "";
 
     public Client() throws SocketException, UnknownHostException {
         socket = new DatagramSocket();
@@ -64,15 +66,58 @@ public class Client implements Closeable, Runnable {
     }
 
     private void process() throws IOException {
+        StringBuilder message;
         socket.receive(request);
         int header = Protocol.readInt(requestBuff);
         if ((header & Protocol.CLIENT_FREQUENT_HEADER) > 0) {
             switch(header) {
                 case Protocol.Header.ANNOUNCEMENT_STATUS:
-                    System.out.println("\rANNOUNCEMENT_STATUS ");
+                    message = new StringBuilder("\rAnnouncement Status : ");
+                    switch (Protocol.readInt(requestBuff, Protocol.AnnouncementStatus.STATUS_OFFSET)) {
+                        case Protocol.AnnouncementStatus.CREATED:
+                            message.append("CREATED ");
+                            break;
+                        case Protocol.AnnouncementStatus.ALREADY_EXISTS:
+                            message.append("ALREADY_EXISTS ");
+                            break;
+                        case Protocol.AnnouncementStatus.MAINTAINED:
+                            message.append("MAINTAINED ");
+                            break;
+                        case Protocol.AnnouncementStatus.NOT_EXISTS:
+                            message.append("NOT_EXISTS ");
+                            break;
+                        case Protocol.AnnouncementStatus.REMOVED:
+                            message.append("REMOVED ");
+                            break;
+                        case Protocol.AnnouncementStatus.BOARD_NO_CHANGE:
+                            message.append("BOARD_NO_CHANGE \n");
+                            message.append(lastAnnouncementsOverview);
+                            break;
+                        }
+                        System.out.println(message);
                     break;
                 case Protocol.Header.ANNOUNCEMENTS_OVERVIEW:
-                    System.out.println("\rANNOUNCEMENTS_OVERVIEW ");
+                    {
+                        boardVersion = Protocol.readInt(
+                            requestBuff,
+                            Protocol.AnnouncementsOverview.VERSION_OFFSET);
+                        int length = Protocol.readInt(requestBuff, Protocol.AnnouncementsOverview.LENGTH_OFFSET);
+                        message = new StringBuilder("\rAnnouncements Overview ");
+                        for(int i = 0; i < length; i++) {
+                            int offset =
+                                Protocol.AnnouncementsOverview.ITEMS_OFFSET +
+                                Protocol.AnnouncementsOverview.ITEM_BYTES * i;
+                            int announcementIdOffset = offset + Protocol.AnnouncementsOverview.ITEM_ANNOUNCEMENT_ID_OFFSET;
+                            int nameOffset = offset + Protocol.AnnouncementsOverview.ITEM_NAME_OFFSET;
+                            message.append("\n    ");
+                            message.append(Protocol.readHexString(requestBuff, announcementIdOffset));
+                            message.append(" ");
+                            message.append(Protocol.readString(requestBuff, nameOffset));
+                            message.append(" ");
+                        }
+                        lastAnnouncementsOverview = message.toString();
+                        System.out.println(lastAnnouncementsOverview);
+                    }
                     break;
                 default:
                     break;
@@ -87,10 +132,12 @@ public class Client implements Closeable, Runnable {
                         request.getAddress().getAddress(), 0,
                         ipBuff, 0,
                         Protocol.IP_BYTES);
-                    System.out.println(
-                        "\r" +
-                        Protocol.readIp(ipBuff) + ":" +
-                        request.getPort()       + " -> Contact ");
+                    message = new StringBuilder("\r");
+                    message.append(Protocol.readIp(ipBuff));
+                    message.append(":");
+                    message.append(request.getPort());
+                    message.append(" -> Contact ");
+                    System.out.println(message);
                     Protocol.write(
                         responseBuff,
                         Protocol.Header.ACKNOWLEDGE);
@@ -103,10 +150,12 @@ public class Client implements Closeable, Runnable {
                         request.getAddress().getAddress(), 0,
                         ipBuff, 0,
                         Protocol.IP_BYTES);
-                    System.out.println(
-                        "\r" +
-                        Protocol.readIp(ipBuff) + ":" +
-                        request.getPort()       + " -> Acknowledge ");
+                    message = new StringBuilder("\r");
+                    message.append(Protocol.readIp(ipBuff));
+                    message.append(":");
+                    message.append(request.getPort());
+                    message.append(" -> Acknowledge ");
+                    System.out.println(message);
                     break;
                 case Protocol.Header.ASK:
                     Protocol.write(responseBuff, Protocol.Header.ANSWER);
@@ -127,20 +176,29 @@ public class Client implements Closeable, Runnable {
                         request.getAddress().getAddress(), 0,
                         ipBuff, 0,
                         Protocol.IP_BYTES);
-                    System.out.println(
-                        "\r" +
-                        Protocol.readIp(ipBuff)           + ":" +
-                        request.getPort()                 + " -> Answer " +
-                        Protocol.readIp(
-                            requestBuff,
-                            Protocol.Answer.EIP_OFFSET)   + ":" +
-                        Protocol.readInt(
-                            requestBuff,
-                            Protocol.Answer.EPORT_OFFSET) + " "
-                        );
+                    message = new StringBuilder("\r");
+                    message.append(Protocol.readIp(ipBuff));
+                    message.append(":");
+                    message.append(request.getPort());
+                    message.append(" -> Answer ");
+                    message.append(Protocol.readIp(requestBuff, Protocol.Answer.EIP_OFFSET));
+                    message.append(":");
+                    message.append(Protocol.readIp(requestBuff, Protocol.Answer.EPORT_OFFSET));
+                    message.append(" ");
+                    System.out.println(message);
                     break;
                 case Protocol.Header.ANNOUNCEMENT_DETAIL:
-                    System.out.println("\rANNOUNCEMENT_DETAIL ");
+                    message = new StringBuilder("\rAnnouncement Detail ");
+                    message.append("\n    Local    : ");
+                    message.append(Protocol.readIp(responseBuff, Protocol.AnnouncementDetail.LIP_OFFSET));
+                    message.append(":");
+                    message.append(Protocol.readInt(responseBuff, Protocol.AnnouncementDetail.LPORT_OFFSET));
+                    message.append("\n    External : ");
+                    message.append(Protocol.readIp(responseBuff, Protocol.AnnouncementDetail.EIP_OFFSET));
+                    message.append(":");
+                    message.append(Protocol.readInt(responseBuff, Protocol.AnnouncementDetail.EPORT_OFFSET));
+                    message.append(" ");
+                    System.out.println(message);
                     break;
             }
         }
@@ -216,6 +274,45 @@ public class Client implements Closeable, Runnable {
         socket.send(response);
     }
 
+    public synchronized void maintain(InetSocketAddress address, int gameId) throws IOException {
+        Protocol.write(responseBuff, Protocol.Header.MAINTAIN_ANNOUNCEMENT);
+        Protocol.write(responseBuff, Protocol.MaintainAnnouncement.GAME_ID_OFFSET, gameId);
+        response.setLength(Protocol.MaintainAnnouncement.BYTES);
+        response.setSocketAddress(address);
+        socket.send(response);
+    }
+
+    public synchronized void remove(InetSocketAddress address, int gameId) throws IOException {
+        Protocol.write(responseBuff, Protocol.Header.REMOVE_ANNOUNCEMENT);
+        Protocol.write(responseBuff, Protocol.RemoveAnnouncement.GAME_ID_OFFSET, gameId);
+        response.setLength(Protocol.RemoveAnnouncement.BYTES);
+        response.setSocketAddress(address);
+        socket.send(response);
+    }
+
+    public synchronized void look(
+            InetSocketAddress address, int gameId,
+            int boardIndex) throws IOException {
+        Protocol.write(responseBuff, Protocol.Header.REMOVE_ANNOUNCEMENT);
+        Protocol.write(responseBuff, Protocol.LookAtBoard.GAME_ID_OFFSET, gameId);
+        Protocol.write(responseBuff, Protocol.LookAtBoard.VERSION_OFFSET, boardVersion);
+        Protocol.write(responseBuff, Protocol.LookAtBoard.BOARD_INDEX_OFFSET, boardIndex);
+        response.setLength(Protocol.LookAtBoard.BYTES);
+        response.setSocketAddress(address);
+        socket.send(response);
+    }
+
+    public synchronized void read(
+            InetSocketAddress address, int gameId,
+            int announcementId) throws IOException {
+        Protocol.write(responseBuff, Protocol.Header.READ_ANNOUNCEMENT);
+        Protocol.write(responseBuff, Protocol.ReadAnnouncement.GAME_ID_OFFSET, gameId);
+        Protocol.write(responseBuff, Protocol.ReadAnnouncement.ANNOUNCEMENT_ID_OFFSET, announcementId);
+        response.setLength(Protocol.ReadAnnouncement.BYTES);
+        response.setSocketAddress(address);
+        socket.send(response);
+    }
+
     private static Client createClient(String[] args) throws SocketException, UnknownHostException {
         switch(args.length) {
             case 0:
@@ -272,14 +369,18 @@ public class Client implements Closeable, Runnable {
                 case "post":
                     post(tokens);
                     return true;
-//                case "maintain":
-//                    return true;
-//                case "remove":
-//                    return true;
-//                case "look":
-//                    return true;
-//                case "read":
-//                    return true;
+                case "maintain":
+                    maintain(tokens);
+                    return true;
+                case "remove":
+                    remove(tokens);
+                    return true;
+                case "look":
+                    look(tokens);
+                    return true;
+                case "read":
+                    read(tokens);
+                    return true;
                 case "help":
                     help();
                     return true;
@@ -344,6 +445,22 @@ public class Client implements Closeable, Runnable {
             tokens[1]);
     }
 
+    private static void maintain(String[] tokens) throws IOException {
+        client.maintain(getAddress("server"), gameId);
+    }
+
+    private static void remove(String[] tokens) throws IOException {
+        client.remove(getAddress("server"), gameId);
+    }
+
+    private static void look(String[] tokens) throws IOException {
+        client.look(getAddress("server"), gameId, Integer.parseInt(tokens[1]));
+    }
+
+    private static void read(String[] tokens) throws IOException {
+        client.read(getAddress("server"), gameId, Integer.parseInt(tokens[1]));
+    }
+
     private static void help() {
         System.out.println("\r1   # exit ");
         System.out.println("\r2   # show local-address ");
@@ -355,7 +472,7 @@ public class Client implements Closeable, Runnable {
         System.out.println("\r6   # post <announcement-name> ");
         System.out.println("\r7   # maintain ");
         System.out.println("\r8   # remove ");
-        System.out.println("\r9   # look <current-board-version> <board-index> ");
+        System.out.println("\r9   # look <board-index> ");
         System.out.println("\r10  # read <announcement-id> ");
     }
 }
