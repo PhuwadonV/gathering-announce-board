@@ -60,9 +60,26 @@ public class Protocol {
     }
     // </editor-fold>
     // <editor-fold desc="Client -> Client">
-    public static class Send {
+    public class Send {
         public static final int BYTES          = HEADER_BYTES + MAX_STRING_BYTES;
         public static final int MESSAGE_OFFSET = HEADER_BYTES;
+        private String message;
+
+        public Send() {
+            this("");
+        }
+
+        public Send(String message) {
+            this.message = message;
+        }
+
+        public String getMessage() {
+            return message;
+        }
+
+        public void setMessage(String message) {
+            this.message = message;
+        }
     }
     // </editor-fold>
     // <editor-fold desc="Client -> Server">

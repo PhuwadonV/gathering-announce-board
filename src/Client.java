@@ -6,13 +6,7 @@ import java.util.Properties;
 public class Client implements Closeable, Runnable {
     private static Client client;
     private static Thread clientThread;
-    private static InetAddress serverIp;
-    private static byte[] serverIpBytes;
-    private static int serverIpInt;
-    private static String serverIpString;
-    private static int serverPort;
-    private static InetSocketAddress serverAddress;
-    private static String serverAddressString;
+    private static Address serverAddress;
     private static int gameId;
 
     private final DatagramSocket socket;
@@ -20,13 +14,7 @@ public class Client implements Closeable, Runnable {
     private final DatagramPacket response;
     private final byte[] requestBuff;
     private final byte[] responseBuff;
-    private final InetAddress localIp;
-    private final byte[] localIpBytes;
-    private final int localIpInt;
-    private final String localIpString;
-    private final int localPort;
-    private final InetSocketAddress localAddress;
-    private final String localAddressString;
+    private final Address localAddress;
     private final byte[] ipBuff = new byte[Protocol.IP_BYTES];
     private volatile boolean isRunning = true;
 
@@ -36,13 +24,7 @@ public class Client implements Closeable, Runnable {
         responseBuff = new byte[Protocol.CLIENT_RESBUFF_BYTES];
         request = new DatagramPacket(requestBuff, requestBuff.length);
         response = new DatagramPacket(responseBuff, responseBuff.length);
-        localIp = InetAddress.getLocalHost();
-        localIpBytes = localIp.getAddress();
-        localIpInt = Protocol.readInt(localIpBytes);
-        localIpString = Protocol.readIp(localIpBytes);
-        localPort = socket.getLocalPort();
-        localAddress = new InetSocketAddress(InetAddress.getByAddress(localIpBytes), localPort);
-        localAddressString = localIpString + ":" + localPort;
+        localAddress = new Address(InetAddress.getLocalHost(), socket.getPort());
     }
 
     public Client(int port) throws SocketException, UnknownHostException {
@@ -51,13 +33,7 @@ public class Client implements Closeable, Runnable {
         responseBuff = new byte[Protocol.CLIENT_RESBUFF_BYTES];
         request = new DatagramPacket(requestBuff, requestBuff.length);
         response = new DatagramPacket(responseBuff, responseBuff.length);
-        localIp = InetAddress.getLocalHost();
-        localIpBytes = localIp.getAddress();
-        localIpInt = Protocol.readInt(localIpBytes);
-        localIpString = Protocol.readIp(localIpBytes);
-        localPort = socket.getLocalPort();
-        localAddress = new InetSocketAddress(InetAddress.getByAddress(localIpBytes), localPort);
-        localAddressString = localIpString + ":" + localPort;
+        localAddress = new Address(InetAddress.getLocalHost(), socket.getPort());
     }
 
     public Client(InetSocketAddress address) throws SocketException, UnknownHostException {
@@ -66,13 +42,7 @@ public class Client implements Closeable, Runnable {
         responseBuff = new byte[Protocol.CLIENT_RESBUFF_BYTES];
         request = new DatagramPacket(requestBuff, requestBuff.length);
         response = new DatagramPacket(responseBuff, responseBuff.length);
-        localIp = InetAddress.getLocalHost();
-        localIpBytes = localIp.getAddress();
-        localIpInt = Protocol.readInt(localIpBytes);
-        localIpString = Protocol.readIp(localIpBytes);
-        localPort = socket.getLocalPort();
-        localAddress = new InetSocketAddress(InetAddress.getByAddress(localIpBytes), localPort);
-        localAddressString = localIpString + ":" + localPort;
+        localAddress = new Address(InetAddress.getLocalHost(), socket.getPort());
     }
 
     @Override
@@ -198,32 +168,32 @@ public class Client implements Closeable, Runnable {
         isRunning = false;
     }
 
+    public int getLocalIpInt() {
+        return localAddress.getIpInt();
+    }
+
     public byte[] getLocalIpBytes() {
-        return localIpBytes;
+        return localAddress.getIpBytes();
     }
 
     public InetAddress getLocalIp() {
-        return localIp;
-    }
-
-    public int getLocalIpInt() {
-        return localIpInt;
+        return localAddress.getIp();
     }
 
     public String getLocalIpString() {
-        return localIpString;
+        return localAddress.getIpString();
     }
 
     public int getLocalPort() {
-        return localPort;
+        return localAddress.getPort();
     }
 
-    public InetSocketAddress getLocalAddress() {
-        return localAddress;
+    public InetSocketAddress getLocalInetSocketAddress() {
+        return localAddress.getInetSocketAddress();
     }
 
     public String getLocalAddressString() {
-        return localAddressString;
+        return localAddress.toString();
     }
 
     public synchronized void signal(InetSocketAddress address) throws IOException {
@@ -272,12 +242,9 @@ public class Client implements Closeable, Runnable {
         try (FileInputStream config = new FileInputStream("client.properties")) {
             Properties properties = new Properties();
             properties.load(config);
-            serverIpString = properties.getProperty("serverIp");
-            serverIp = InetAddress.getByName(serverIpString);
-            serverIpBytes = serverIp.getAddress();
-            serverIpInt = Protocol.readInt(serverIpBytes);
-            serverPort = Integer.parseInt(properties.getProperty("serverPort"));
-            serverAddress = new InetSocketAddress(serverIp, serverPort);
+            serverAddress = new Address(
+                properties.getProperty("serverIp"),
+                Integer.parseInt(properties.getProperty("serverPort")));
             gameId = Integer.parseInt(properties.getProperty("gameId"));
         }
 
@@ -343,7 +310,7 @@ public class Client implements Closeable, Runnable {
 
     private static InetSocketAddress getAddress(String token) {
         if(token.equals("server")) {
-            return serverAddress;
+            return serverAddress.getInetSocketAddress();
         }
         else {
             int separatorIndex = token.indexOf(":");
