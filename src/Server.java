@@ -63,7 +63,7 @@ public class Server implements Closeable, Runnable {
                                 Protocol.AnnouncementStatus.MAINTAINED :
                                 Protocol.AnnouncementStatus.NOT_EXISTS);
                         response.setSocketAddress(request.getSocketAddress());
-                        response.setLength(Protocol.Answer.BYTES);
+                        response.setLength(Protocol.AnnouncementStatus.BYTES);
                         socket.send(response);
                     }
                     break;
@@ -109,7 +109,7 @@ public class Server implements Closeable, Runnable {
                                 Protocol.AnnouncementStatus.CREATED :
                                 Protocol.AnnouncementStatus.ALREADY_EXISTS);
                         response.setSocketAddress(request.getSocketAddress());
-                        response.setLength(Protocol.Answer.BYTES);
+                        response.setLength(Protocol.AnnouncementStatus.BYTES);
                         socket.send(response);
                     }
                     break;
@@ -124,7 +124,7 @@ public class Server implements Closeable, Runnable {
                                 Protocol.AnnouncementStatus.REMOVED :
                                 Protocol.AnnouncementStatus.NOT_EXISTS);
                         response.setSocketAddress(request.getSocketAddress());
-                        response.setLength(Protocol.Answer.BYTES);
+                        response.setLength(Protocol.AnnouncementStatus.BYTES);
                         socket.send(response);
                     }
                     break;
