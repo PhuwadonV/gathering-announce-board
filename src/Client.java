@@ -24,7 +24,7 @@ public class Client implements Closeable, Runnable {
         responseBuff = new byte[Protocol.CLIENT_RESBUFF_BYTES];
         request = new DatagramPacket(requestBuff, requestBuff.length);
         response = new DatagramPacket(responseBuff, responseBuff.length);
-        localAddress = new Address(InetAddress.getLocalHost(), socket.getPort());
+        localAddress = new Address(InetAddress.getLocalHost(), socket.getLocalPort());
     }
 
     public Client(int port) throws SocketException, UnknownHostException {
@@ -33,7 +33,7 @@ public class Client implements Closeable, Runnable {
         responseBuff = new byte[Protocol.CLIENT_RESBUFF_BYTES];
         request = new DatagramPacket(requestBuff, requestBuff.length);
         response = new DatagramPacket(responseBuff, responseBuff.length);
-        localAddress = new Address(InetAddress.getLocalHost(), socket.getPort());
+        localAddress = new Address(InetAddress.getLocalHost(), socket.getLocalPort());
     }
 
     public Client(InetSocketAddress address) throws SocketException, UnknownHostException {
@@ -42,7 +42,7 @@ public class Client implements Closeable, Runnable {
         responseBuff = new byte[Protocol.CLIENT_RESBUFF_BYTES];
         request = new DatagramPacket(requestBuff, requestBuff.length);
         response = new DatagramPacket(responseBuff, responseBuff.length);
-        localAddress = new Address(InetAddress.getLocalHost(), socket.getPort());
+        localAddress = new Address(InetAddress.getLocalHost(), socket.getLocalPort());
     }
 
     @Override
