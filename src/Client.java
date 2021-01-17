@@ -138,12 +138,6 @@ public class Client implements Closeable, Runnable {
                         Protocol.readIp(ipBuff) + ":" +
                         request.getPort()       + " -> Acknowledge ");
                     break;
-                case Protocol.Header.REMOTE:
-                    System.out.println("\rREMOTE ");
-                    break;
-                case Protocol.Header.TOLLWAY:
-                    System.out.println("\rTOLLWAY ");
-                    break;
                 case Protocol.Header.ASK:
                     Protocol.write(responseBuff, Protocol.Header.ANSWER);
                     System.arraycopy(
@@ -275,7 +269,7 @@ public class Client implements Closeable, Runnable {
     public static void main(String[] args) throws IOException {
         Console console = System.console();
 
-        try (FileInputStream config = new FileInputStream("config.properties")) {
+        try (FileInputStream config = new FileInputStream("client.properties")) {
             Properties properties = new Properties();
             properties.load(config);
             serverIpString = properties.getProperty("serverIp");
@@ -316,8 +310,6 @@ public class Client implements Closeable, Runnable {
                     return true;
                 case "ask":
                     ask(tokens);
-                    return true;
-                case "toll":
                     return true;
                 case "send":
                     send(tokens);
@@ -401,12 +393,11 @@ public class Client implements Closeable, Runnable {
         System.out.println("\r4.1 # contact <ip>:<port> ");
         System.out.println("\r4.2 # contact server ");
         System.out.println("\r5   # ask server");
-        System.out.println("\r6   # toll <ip>:<port> ");
-        System.out.println("\r7   # send <ip>:<port> <message> ");
-        System.out.println("\r8   # post <announcement-name> ");
-        System.out.println("\r9   # maintain ");
-        System.out.println("\r10  # remove ");
-        System.out.println("\r11  # look <current-board-version> <board-index> ");
-        System.out.println("\r12  # read <announcement-id> ");
+        System.out.println("\r6   # send <ip>:<port> <message> ");
+        System.out.println("\r7   # post <announcement-name> ");
+        System.out.println("\r8   # maintain ");
+        System.out.println("\r9   # remove ");
+        System.out.println("\r10  # look <current-board-version> <board-index> ");
+        System.out.println("\r11  # read <announcement-id> ");
     }
 }

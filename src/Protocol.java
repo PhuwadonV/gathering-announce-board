@@ -23,16 +23,13 @@ public class Protocol {
     public static final int SERVER_RESBUFF_BYTES   = MAX_BUFFER_BYTES;
     public static final int CLIENT_REQBUFF_BYTES   = AnnouncementsOverview.BYTES;
     public static final int CLIENT_RESBUFF_BYTES   = PostAnnouncement.BYTES;
-    public static final int TOLLWAY_REQBUFF_BYTES  = MAX_BUFFER_BYTES;
-    public static final int TOLLWAY_RESBUFF_BYTES  = MAX_BUFFER_BYTES;
 
     public static final int SERVER_FREQUENT_HEADER = 1 << 31;
     public static final int CLIENT_FREQUENT_HEADER = 1 << 30;
 
     public static class Header {
-        public static final int PASS                   = SERVER_FREQUENT_HEADER;
-        public static final int MAINTAIN_ANNOUNCEMENT  = SERVER_FREQUENT_HEADER | 1;
-        public static final int LOOK_AT_BOARD          = SERVER_FREQUENT_HEADER | 2;
+        public static final int MAINTAIN_ANNOUNCEMENT  = SERVER_FREQUENT_HEADER;
+        public static final int LOOK_AT_BOARD          = SERVER_FREQUENT_HEADER | 1;
 
         public static final int ANNOUNCEMENT_STATUS    = CLIENT_FREQUENT_HEADER;
         public static final int ANNOUNCEMENTS_OVERVIEW = CLIENT_FREQUENT_HEADER | 1;
@@ -40,17 +37,16 @@ public class Protocol {
         public static final int SIGNAL                 = 0;
         public static final int CONTACT                = 1;
         public static final int ACKNOWLEDGE            = 2;
-        public static final int REMOTE                 = 3;
-        public static final int ASK                    = 5;
-        public static final int ANSWER                 = 6;
-        public static final int SEND                   = 7;
-        public static final int POST_ANNOUNCEMENT      = 8;
-        public static final int REMOVE_ANNOUNCEMENT    = 9;
-        public static final int READ_ANNOUNCEMENT      = 10;
-        public static final int ANNOUNCEMENT_DETAIL    = 11;
+        public static final int ASK                    = 3;
+        public static final int ANSWER                 = 4;
+        public static final int SEND                   = 5;
+        public static final int POST_ANNOUNCEMENT      = 6;
+        public static final int REMOVE_ANNOUNCEMENT    = 7;
+        public static final int READ_ANNOUNCEMENT      = 8;
+        public static final int ANNOUNCEMENT_DETAIL    = 9;
     }
     // </editor-fold>
-    // <editor-fold desc="-> Any">
+    // <editor-fold desc="Any -> Any">
     public static class Signal {
         public static final int BYTES = HEADER_BYTES;
     }
@@ -62,30 +58,14 @@ public class Protocol {
     public static class Acknowledge {
         public static final int BYTES = HEADER_BYTES;
     }
-
-    public static class Remote {
-        public static final int BYTES             = HEADER_BYTES + (IP_BYTES + PORT_BYTES) * 2 + Integer.BYTES + (IP_BYTES + PORT_BYTES);
-        public static final int FROM_EIP_OFFSET   = HEADER_BYTES;
-        public static final int FROM_EPORT_OFFSET = FROM_EIP_OFFSET + IP_BYTES;
-        public static final int TO_EIP_OFFSET     = FROM_EPORT_OFFSET + PORT_BYTES;
-        public static final int TO_EPORT_OFFSET   = TO_EIP_OFFSET + IP_BYTES;
-        public static final int CMD_OFFSET        = TO_EPORT_OFFSET + PORT_BYTES;
-        public static final int EIP_OFFSET        = CMD_OFFSET + Integer.BYTES;
-        public static final int EPORT_OFFSET      = EIP_OFFSET + IP_BYTES;
-        public static final int ENTER_TOLLWAY     = 0;
-        public static final int DENY_TOLL         = 1;
-        public static final int ACCEPTED_TOLL     = 1;
-        public static final int LEAVE_TOLLWAY     = 2;
+    // </editor-fold>
+    // <editor-fold desc="Client -> Client">
+    public static class Send {
+        public static final int BYTES          = HEADER_BYTES + MAX_STRING_BYTES;
+        public static final int MESSAGE_OFFSET = HEADER_BYTES;
     }
     // </editor-fold>
-    // <editor-fold desc="-> Server">
-    public static class Pass {
-        public static final int BYTES          = HEADER_BYTES + IP_BYTES + PORT_BYTES;
-        public static final int EIP_OFFSET     = HEADER_BYTES;
-        public static final int EPORT_OFFSET   = EIP_OFFSET + IP_BYTES;
-        public static final int CONTENT_OFFSET = EPORT_OFFSET + PORT_BYTES;
-    }
-
+    // <editor-fold desc="Client -> Server">
     public static class Ask {
         public static final int BYTES = HEADER_BYTES;
     }
@@ -121,12 +101,7 @@ public class Protocol {
         public static final int ANNOUNCEMENT_ID_OFFSET = GAME_ID_OFFSET + GAME_ID_BYTES;
     }
     // </editor-fold>
-    // <editor-fold desc="-> Client">
-    public static class Send {
-        public static final int BYTES          = HEADER_BYTES + MAX_STRING_BYTES;
-        public static final int MESSAGE_OFFSET = HEADER_BYTES;
-    }
-
+    // <editor-fold desc="Server -> Client">
     public static class Answer {
         public static final int BYTES        = HEADER_BYTES + IP_BYTES + PORT_BYTES;
         public static final int EIP_OFFSET   = HEADER_BYTES;
@@ -150,7 +125,7 @@ public class Protocol {
     }
 
     public static class AnnouncementDetail {
-        public static final int BYTES        = HEADER_BYTES + IP_BYTES + PORT_BYTES + IP_BYTES + PORT_BYTES;
+        public static final int BYTES        = HEADER_BYTES + (IP_BYTES + PORT_BYTES) * 2;
         public static final int EIP_OFFSET   = HEADER_BYTES;
         public static final int EPORT_OFFSET = EIP_OFFSET + IP_BYTES;
         public static final int LIP_OFFSET   = EPORT_OFFSET + PORT_BYTES;
@@ -245,25 +220,23 @@ public class Protocol {
         return readString(data, 0);
     }
     // </editor-fold>
-    // <editor-fold desc="Test">
+    // <editor-fold desc="Sorted protocol size">
     public static void main(String[] args) {
         List<Pair<Integer, String>> headers = new LinkedList<>();
         headers.add(new Pair<>(Signal.BYTES,                "SIGNAL                 :   Any  ->   Any "));
         headers.add(new Pair<>(Contact.BYTES,               "CONTACT                :   Any  ->   Any "));
         headers.add(new Pair<>(Acknowledge.BYTES,           "ACKNOWLEDGE            :   Any  ->   Any "));
-        headers.add(new Pair<>(Remote.BYTES,                  "TOLL                   :   Any  ->   Any "));
-        headers.add(new Pair<>(Tollway.BYTES,               "TOLLWAY                :   Any  ->   Any "));
         headers.add(new Pair<>(Send.BYTES,                  "SEND                   : Client -> Client"));
-        headers.add(new Pair<>(Ask.BYTES,                   "ASK                    : Client ->       "));
-        headers.add(new Pair<>(PostAnnouncement.BYTES,      "POST_ANNOUNCEMENT      : Client ->       "));
-        headers.add(new Pair<>(MaintainAnnouncement.BYTES,  "MAINTAIN_ANNOUNCEMENT  : Client ->       "));
-        headers.add(new Pair<>(RemoveAnnouncement.BYTES,    "REMOVE_ANNOUNCEMENT    : Client ->       "));
-        headers.add(new Pair<>(LookAtBoard.BYTES,           "LOOK_AT_BOARD          : Client ->       "));
-        headers.add(new Pair<>(ReadAnnouncement.BYTES,      "READ_ANNOUNCEMENT      : Client ->       "));
-        headers.add(new Pair<>(Answer.BYTES,                "ANSWER                 :        -> Client"));
-        headers.add(new Pair<>(AnnouncementStatus.BYTES,    "ANNOUNCEMENT_STATUS    :        -> Client"));
-        headers.add(new Pair<>(AnnouncementsOverview.BYTES, "ANNOUNCEMENTS_OVERVIEW :        -> Client"));
-        headers.add(new Pair<>(AnnouncementDetail.BYTES,    "ANNOUNCEMENT_DETAIL    :        -> Client"));
+        headers.add(new Pair<>(Ask.BYTES,                   "ASK                    : Client ->   Any "));
+        headers.add(new Pair<>(PostAnnouncement.BYTES,      "POST_ANNOUNCEMENT      : Client ->   Any "));
+        headers.add(new Pair<>(MaintainAnnouncement.BYTES,  "MAINTAIN_ANNOUNCEMENT  : Client ->   Any "));
+        headers.add(new Pair<>(RemoveAnnouncement.BYTES,    "REMOVE_ANNOUNCEMENT    : Client ->   Any "));
+        headers.add(new Pair<>(LookAtBoard.BYTES,           "LOOK_AT_BOARD          : Client ->   Any "));
+        headers.add(new Pair<>(ReadAnnouncement.BYTES,      "READ_ANNOUNCEMENT      : Client ->   Any "));
+        headers.add(new Pair<>(Answer.BYTES,                "ANSWER                 :   Any  -> Client"));
+        headers.add(new Pair<>(AnnouncementStatus.BYTES,    "ANNOUNCEMENT_STATUS    :   Any  -> Client"));
+        headers.add(new Pair<>(AnnouncementsOverview.BYTES, "ANNOUNCEMENTS_OVERVIEW :   Any  -> Client"));
+        headers.add(new Pair<>(AnnouncementDetail.BYTES,    "ANNOUNCEMENT_DETAIL    :   Any  -> Client"));
         headers.stream()
             .sorted(Comparator.comparingInt(Pair::getItem1))
             .forEach(h -> System.out.println(h.getItem2() + " : " + h.getItem1()));

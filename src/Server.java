@@ -2,7 +2,6 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 
 @SuppressWarnings({"unused"})
@@ -12,7 +11,6 @@ public class Server implements Closeable, Runnable {
     private final DatagramPacket response;
     private final byte[] requestBuff;
     private final byte[] responseBuff;
-    private final byte[] ipBuff = new byte[4];
     private volatile boolean isRunning = true;
 
     public Server() throws IOException {
@@ -52,30 +50,8 @@ public class Server implements Closeable, Runnable {
     private void process() throws IOException {
         socket.receive(request);
         int header = Protocol.readInt(requestBuff);
-        int requestLength;
         if ((header & Protocol.SERVER_FREQUENT_HEADER) > 0) {
             switch(header) {
-                case Protocol.Header.PASS:
-                    requestLength = request.getLength();
-                    System.arraycopy(requestBuff, 0, responseBuff, 0, requestLength);
-                    System.arraycopy(
-                            request.getAddress().getAddress(), 0,
-                            responseBuff, Protocol.Pass.EIP_OFFSET,
-                            Protocol.IP_BYTES);
-                    Protocol.write(
-                            responseBuff,
-                            Protocol.Pass.EPORT_OFFSET,
-                            request.getPort());
-                    System.arraycopy(
-                            requestBuff, Protocol.Pass.EIP_OFFSET,
-                            ipBuff, 0,
-                            4);
-                    response.setSocketAddress(new InetSocketAddress(
-                            InetAddress.getByAddress(ipBuff),
-                            Protocol.readInt(requestBuff, Protocol.Pass.EPORT_OFFSET)));
-                    response.setLength(requestLength);
-                    socket.send(response);
-                    break;
                 case Protocol.Header.MAINTAIN_ANNOUNCEMENT:
                     System.out.println("\rMAINTAIN_ANNOUNCEMENT ");
                     break;
